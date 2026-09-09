@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+build/
+.DS_Store
+*.log
+
+# Користувацькі книги не потрапляють у репозиторій
+uploads/
+books/
+!books/public-domain/
