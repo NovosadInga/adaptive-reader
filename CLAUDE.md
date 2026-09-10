@@ -7,9 +7,13 @@
 
 Прочитай `docs/CURRENT_STATE.md` — там актуальна стадія й наступний крок.
 Конкретні задачі — у GitHub Issues (D22), а не в документах:
-`gh issue list --milestone "Phase 1 — Vertical slice"`.
+`gh issue list --milestone "Phase 1 — Vertical slice" --limit 50`
+(без `--limit` показуються лише 30 записів із 36).
 За потреби: `docs/PROJECT.md` (vision), `docs/REQUIREMENTS.md` (вимоги),
 `docs/DECISIONS.md` (рішення та їхня ціна).
+
+Якщо не пам'ятаєш, як влаштована ця система — `docs/README.md`: що де лежить,
+що означають коди `R`/`D`/`O`, як влаштовані issues.
 
 PDF-блупринт у корені — історичний оригінал ідеї. Там, де він розходиться з
 документами в `docs/`, правильні документи.
