@@ -81,11 +81,20 @@ one task = one branch = one pull request.
 
 ### Labels
 
-- `area: parsers` / `api` / `reader` / `ai` / `infra` / `docs` — which layer
+Where the work happens (D24) — the same split as the branch and commit prefixes:
+
+- `backend` — parsers, API, storage, the server side of the AI hints
+- `frontend` — reader UI, selection, the hint popup
+- `docs` — documentation
+- `infra` — deployment, environment
+
+What kind of work it is:
+
 - `research` — find something out before writing code; every open question
   (`O`) is one of these
 - `blocked` — an unresolved dependency, do not start
 - `post-MVP` — deliberately after the MVP success criterion
+- `epic` — a grouping issue, never worked on directly
 
 ## Commands
 
@@ -116,7 +125,29 @@ No commits go straight to `main`. Each task gets its own short branch
 
 Pull request and commit titles start with the area they touch, and that prefix
 describes **the change, not the branch** — a commit sitting on a `backend/…`
-branch that only edits documentation is prefixed `docs/`.
+branch that only edits documentation is prefixed `docs/` (D24).
 
-Everything in the project is written in English. Conversation with the author
-is in Ukrainian.
+Everything in the project is written in English (D23). Conversation with the
+author is in Ukrainian.
+
+The product is for someone reading in English, whatever their first language.
+The language of the hints is a request parameter with Ukrainian as its default,
+not a property of the product (D25).
+
+## Agents and skills
+
+Every file in `.claude/` states its `model` and `effort` in the frontmatter,
+with a comment saying why (D26). Nothing inherits the session model by default,
+because running everything on the most expensive model is a real cost with no
+matching benefit.
+
+| File | Model | Effort |
+|---|---|---|
+| `agents/prompt-engineer.md` | `opus` | `high` |
+| `agents/reader-ux.md` | `opus` | `medium` |
+| `skills/end-session/SKILL.md` | `opus` | `medium` |
+| `skills/requirements/SKILL.md` | `sonnet` | `high` |
+
+The rule when adding a new one: name the reason out loud. A cheaper model
+unless the work is genuinely hard, and effort matched to how open-ended the
+task is, not raised by reflex.

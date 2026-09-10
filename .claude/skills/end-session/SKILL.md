@@ -1,6 +1,11 @@
 ---
 name: end-session
 description: Завершення робочої сесії — оновити стан проєкту, зафіксувати нові рішення, підготувати наступний крок. Викликати наприкінці роботи, перед тим як закрити сесію.
+# Opus at medium effort: this skill writes the DECISIONS.md entries, which are the
+# most valuable prose in the repository (D13). The checklist structure is clear,
+# so medium is enough - the model quality is what matters here, not the effort.
+model: opus
+effort: medium
 ---
 
 # Завершення сесії
