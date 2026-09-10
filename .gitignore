@@ -7,7 +7,15 @@ build/
 .DS_Store
 *.log
 
-# Користувацькі книги не потрапляють у репозиторій
+# Reader uploads never enter the repository
 uploads/
 books/
 !books/public-domain/
+
+# Personal, machine-specific Claude Code settings - tool permissions granted on
+# one laptop say nothing about the project.
+#
+# The rest of .claude/ stays tracked on purpose: the agents and the session
+# skills are part of how this project is built, they declare their model and
+# effort (D26), and the documentation refers to them.
+.claude/settings.local.json
