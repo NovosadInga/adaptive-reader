@@ -1,0 +1,23 @@
+{
+  "name": "@reader/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "parse": "node src/cli/parse.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.11.1",
+    "jszip": "^3.10.2",
+    "node-html-parser": "^9.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}
