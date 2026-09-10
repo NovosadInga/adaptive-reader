@@ -1,6 +1,10 @@
 ---
 name: requirements
 description: Сформулювати нову вимогу або уточнити наявну перед тим, як писати код — сценарій, краєві випадки, критерій готовності, межі. Використовувати, коли з'явилася нова ідея або функція.
+# Sonnet at high effort: structured work against a template, but finding the edge
+# cases needs depth - that is where a requirement is worth writing at all.
+model: sonnet
+effort: high
 ---
 
 # Формулювання вимоги

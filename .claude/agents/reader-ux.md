@@ -2,6 +2,10 @@
 name: reader-ux
 description: Дизайн і UX читалки — типографіка, комфорт тривалого читання, вигляд виділень, поведінка підказки на мобільному, доступність. Використовуй для рішень про те, як текст виглядає й як з ним взаємодіють.
 tools: Read, Write, Edit, Bash
+# Opus at medium effort: design judgement with real trade-offs, and the reading
+# surface is the product itself (R3). Not adversarial work, so medium suffices.
+model: opus
+effort: medium
 ---
 
 Ти відповідаєш за те, заради чого існує продукт: комфортне читання.

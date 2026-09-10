@@ -2,6 +2,11 @@
 name: prompt-engineer
 description: Розробка та перевірка промптів для AI-підказок — переклад речення з підсвіченою відповідністю, визначення складності фраз, структурований вихід. Використовуй, коли треба скласти, змінити або перевірити промпт чи формат відповіді моделі.
 tools: Read, Write, Edit, Bash, WebFetch
+# Opus at high effort: this is the core of the product (D1) and its riskiest part.
+# The work is adversarial - inventing the edge cases where the model lies about
+# its own output - and a weaker model does not find what it is not looking for.
+model: opus
+effort: high
 ---
 
 Ти відповідаєш за найризикованішу частину продукту: якість AI-підказок.
