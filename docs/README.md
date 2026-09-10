@@ -45,8 +45,8 @@ ties everything together.
 | Code | Meaning | Where it lives |
 |---|---|---|
 | `R1`…`R8` | A requirement — what the product must do | `REQUIREMENTS.md` |
-| `D1`…`D22` | A decision — why it is built this way | `DECISIONS.md` |
-| `O2`…`O8` | An open question — not decided yet | `CURRENT_STATE.md` |
+| `D1`…`D27` | A decision — why it is built this way | `DECISIONS.md` |
+| `O2`…`O9` | An open question — not decided yet | `CURRENT_STATE.md` |
 | `#14` | A GitHub issue | GitHub |
 
 **How this reads in practice.** Issue #16 says `Covers R2, R3` and refers to
@@ -60,13 +60,13 @@ apart.
 
 ## The issues
 
-36 issues in total, on three levels.
+38 issues in total, on three levels.
 
 **Milestones — when.** Four of them, in working order:
 
 | Milestone | Open tasks |
 |---|---|
-| Phase 1 — Vertical slice | 11 |
+| Phase 1 — Vertical slice | 13 |
 | Phase 2 — MVP | 9 |
 | Phase 3 — Public demo | 4 |
 | Phase 4 — Post-MVP | 4 |
@@ -90,15 +90,20 @@ Where the work happens (D24) — the same split as the branch and commit prefixe
 
 What kind of work it is:
 
+- `design` — how it looks and feels, decided before it is built (D27)
 - `research` — find something out before writing code; every open question
   (`O`) is one of these
 - `blocked` — an unresolved dependency, do not start
 - `post-MVP` — deliberately after the MVP success criterion
 - `epic` — a grouping issue, never worked on directly
+- `accessibility` — a barrier for people with disabilities
+
+`design` cuts across `frontend` rather than replacing it: a task can be both
+designed and built, and most reader tasks are.
 
 ## Commands
 
-`gh issue list` shows **only 30 rows by default**, and there are 36 issues, so
+`gh issue list` shows **only 30 rows by default**, and there are 38 issues, so
 always pass `--limit 50` or work will silently disappear from the list.
 
 ```bash
