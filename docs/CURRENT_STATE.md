@@ -101,3 +101,12 @@ Phase 1 — Вертикальний зріз. **Крок 1 із 4 викона�
 
 Прямих комітів у `main` немає. Кожна задача — окрема коротка гілка, злиття
 через pull request на GitHub (D21).
+
+**Беклог живе в GitHub Issues** (D22), а не в цьому файлі: сім епіків, задачі
+розміром в одну сесію, віхи Vertical slice → MVP → Public demo → Post-MVP.
+Цей документ описує стан і напрямок; конкретні задачі — там.
+
+```
+gh issue list --milestone "Phase 1 — Vertical slice"   # що робимо зараз
+gh issue list --label epic                              # мапа проєкту
+```
