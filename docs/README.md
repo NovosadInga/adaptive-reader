@@ -152,6 +152,8 @@ matching benefit.
 | `agents/reader-ux.md` | `opus` | `medium` |
 | `skills/end-session/SKILL.md` | `opus` | `medium` |
 | `skills/requirements/SKILL.md` | `sonnet` | `high` |
+| `agents/code-reviewer.md` | `sonnet` | `medium` |
+| `skills/review-pr/SKILL.md` | `haiku` | `low` |
 
 The rule when adding a new one: name the reason out loud. A cheaper model
 unless the work is genuinely hard, and effort matched to how open-ended the
