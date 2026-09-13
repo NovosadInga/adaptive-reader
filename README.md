@@ -3,7 +3,8 @@
 A reading app for English books that helps exactly where the reader gets stuck —
 without breaking the flow of reading.
 
-**Status:** product definition complete, implementation starting.
+**Status:** vertical slice in progress. EPUB parsing is done and verified on
+real books; the HTTP layer and the reader UI are next.
 
 ## The problem
 
@@ -41,18 +42,38 @@ feature does not depend on the riskiest part of the system.
 
 React + Vite + TypeScript · Node + Fastify + TypeScript · PostgreSQL · Anthropic API
 
+## How the work is done
+
+The code is written by a coding agent (Claude Code) and directed, reviewed and
+merged by the author. That shapes the process more than the stack does:
+
+- Every task is one issue, one short branch and one pull request. `main` only
+  changes through a pull request.
+- Every pull request is reviewed twice, independently of the session that wrote
+  it: by a local reviewer agent before the push, and by Claude Code Review on
+  GitHub after the PR opens. Neither blocks the merge; the author decides.
+- Every significant decision is recorded with its reasoning and its cost in
+  `docs/DECISIONS.md`. The history is meant to be read, not just the code.
+- Secrets never enter the repository: API keys live in environment variables on
+  the server, GitHub tokens in repository secrets, and both the local tooling
+  and GitHub's push protection are configured to refuse them.
+
 ## Documentation
 
 Written in Ukrainian, in `docs/`:
 
+- `README.md` — how the documents, issues and conventions fit together
 - `PROJECT.md` — product vision
 - `REQUIREMENTS.md` — MVP scope and requirements
 - `DECISIONS.md` — every significant decision, with its rationale and its cost
 - `CURRENT_STATE.md` — where the project stands right now
 
+The backlog lives in GitHub Issues: epics, one-session tasks and milestones.
+
 ## Roadmap
 
-- [ ] EPUB parsing and reader UI
+- [x] EPUB parsing into the shared book representation
+- [ ] HTTP API and reader UI
 - [ ] Sentence translation with aligned highlighting
 - [ ] Remaining formats: FB2, HTML, TXT, PDF
 - [ ] Difficulty analysis and automatic highlighting
