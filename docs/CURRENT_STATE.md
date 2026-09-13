@@ -12,37 +12,18 @@ Phase 1 — Вертикальний зріз. **Крок 1 із 4 викона�
 
 ## Зроблено
 
-**Phase 0 — Product Definition (завершено).** Discovery, блупринт v0.1, головна
-взаємодія, рішення D1–D16, стек React + Vite + TS / Node + Fastify + TS /
-Postgres (D15), агенти `prompt-engineer` і `reader-ux`, skills.
-
-**Phase 1, крок 1 — парсер EPUB (виконано, 2026-09-10).** Пакет `api/`: Node 24
-+ TypeScript без збірки (D20). `src/domain/book.ts` (D6, D16),
-`src/text/sentences.ts` (D18), `src/parsers/{markup,epub}.ts` (D17),
-`src/cli/parse.ts`. Перевірено тоді на двох книгах Gutenberg без втрат тексту.
-**Зараз ця перевірка невідтворювана** — див. «Відомі обмеження».
-
-**Процес роботи (2026-09-10 і 2026-09-13).**
-
-- Беклог у GitHub Issues (D22), гілки й PR (D21), префікси в назвах (D24),
-  мова (D23), модель і effort для кожного агента/skill (D26), дизайн як окрема
-  лінія (D27), `docs/README.md` як навігація.
-- **Рев'ю кожного PR (D28):** локальний агент `code-reviewer` через
-  `/review-pr` до пушу; Claude Code Review на GitHub після відкриття PR
-  (`.github/workflows/claude-code-review.yml`); шаблон PR
-  (`.github/pull_request_template.md`). Перший прогін на #44 пройшов
-  (19 ходів, ~$0.74 квоти підписки), але коментарів не лишив — причина
-  невідома, див. обмеження.
-- **Репозиторій публічний** з 2026-09-13 (D8 доповнено). На GitHub: `main`
-  тільки через PR (і для адміна), force push заборонено, secret scanning +
-  push protection, Dependabot alerts і security updates.
-- **Один PR — одна тема** (D29). Побічні правки — окрема гілка.
-- **Мова:** `docs/` і `.claude/` — українською до окремого PR перекладу
-  (D23 доповнено); код, коміти, PR, issues, кореневий README — англійською.
-- Локальний захист (поза репозиторієм, у `~/.claude/`): deny-правила на
-  секрети й системні зміни, sandbox із захистом credentials, файл налаштувань
-  закритий для Claude. `git push` іде поза sandbox зі свідомим підтвердженням
-  автора — обраний варіант, не помилка.
+- **Phase 0 — Product Definition:** vision, вимоги R1–R8, рішення D1–D16,
+  стек (D15), агенти `prompt-engineer` і `reader-ux`.
+- **Phase 1, крок 1 — парсер EPUB (2026-09-10):** пакет `api/` — Node 24 +
+  TS без збірки (D20), `src/domain/book.ts`, `src/text/sentences.ts`,
+  `src/parsers/{markup,epub}.ts`, `src/cli/parse.ts`. Перевірено на двох
+  книгах Gutenberg, але перевірка невідтворювана — див. обмеження.
+- **Процес (2026-09-10 і 09-13):** issues (D22), гілки й PR (D21, D24),
+  мова (D23), модель на кожен агент/skill (D26), дизайн окремо (D27), два
+  рев'ю на PR (D28), один PR — одна тема (D29). Репозиторій публічний (D8)
+  з захистом `main`, secret scanning, Dependabot. Локально — deny-правила й
+  sandbox поза репозиторієм; `git push` і `gh` ідуть поза sandbox зі свідомим
+  підтвердженням автора.
 
 ## Наступний крок
 
@@ -103,10 +84,7 @@ O1 (стек, D15), O3 (зберігання книги, D15/D16), O8 части
 **Також:** MCP-сервери, plugins, agent teams, нові агенти й нові правила в
 `CLAUDE.md` — поки не з'явиться конкретна потреба. CD — не раніше Phase 3 (#46).
 
-## Процес роботи
-
-`main` тільки через PR (D21, захист на GitHub). Один PR — одна тема (D29).
-Перед PR — `/review-pr`; після — рев'ю на GitHub (D28). Беклог — GitHub Issues:
+## Команди
 
 ```
 gh issue list --milestone "Phase 1 — Vertical slice" --limit 50   # що робимо зараз
