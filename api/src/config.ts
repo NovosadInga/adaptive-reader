@@ -36,7 +36,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
   return {
     port: readPort(env, 'PORT', 3000),
     host: readOptional(env, 'HOST', '127.0.0.1'),
-    corsOrigin: readRequired(env, 'CORS_ORIGIN'),
+    corsOrigin: readOrigin(env, 'CORS_ORIGIN'),
   };
 }
 
@@ -51,6 +51,28 @@ function readRequired(env: NodeJS.ProcessEnv, name: string): string {
 function readOptional(env: NodeJS.ProcessEnv, name: string, fallback: string): string {
   const value = env[name]?.trim();
   return value ? value : fallback;
+}
+
+/**
+ * An origin is exactly `scheme://host[:port]`. A trailing slash or a path
+ * (`http://localhost:5173/`) is a classic slip: the server would start, the
+ * browser would compare the header with its own origin, and every request
+ * would fail with no hint from the server.
+ */
+function readOrigin(env: NodeJS.ProcessEnv, name: string): string {
+  const value = readRequired(env, name);
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new ConfigError(`${name} must be an origin like http://localhost:5173, got "${value}"`);
+  }
+  if (parsed.origin !== value) {
+    throw new ConfigError(
+      `${name} must be exactly scheme://host[:port] with no path or trailing slash, got "${value}"`,
+    );
+  }
+  return value;
 }
 
 function readPort(env: NodeJS.ProcessEnv, name: string, fallback: number): number {

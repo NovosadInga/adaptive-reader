@@ -36,3 +36,14 @@ test('rejects a PORT that is not a valid port number', () => {
     assert.throws(() => loadConfig({ ...full, PORT }), ConfigError, `PORT=${PORT}`);
   }
 });
+
+test('rejects a CORS_ORIGIN that is not a bare origin', () => {
+  for (const CORS_ORIGIN of [
+    'localhost:5173',
+    'http://localhost:5173/',
+    'http://localhost:5173/app',
+    'not a url',
+  ]) {
+    assert.throws(() => loadConfig({ ...full, CORS_ORIGIN }), ConfigError, `CORS_ORIGIN=${CORS_ORIGIN}`);
+  }
+});
