@@ -1,0 +1,50 @@
+# Typecheck and tests on every pull request and on every push to main.
+#
+# Why this exists (#45): the "What was verified" checkboxes in the PR
+# template are the agent's word. This job turns them into a fact GitHub
+# checked itself. The `check` job is marked as required in the branch
+# protection of `main`, so a red build cannot be merged — a lock instead of
+# a promise, the same principle as the review workflow (D28).
+#
+# Only `api/` exists today. When the frontend package appears (#18), add a
+# second job for it here.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to the same PR cancels the run of the old commit.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          # Same major as `engines.node` in api/package.json (D20).
+          node-version: 24
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      # `npm ci` installs exactly what package-lock.json says and fails if the
+      # lock and package.json disagree — unlike `npm install`, which may
+      # silently resolve newer versions and rewrite the lock.
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - run: npm test
