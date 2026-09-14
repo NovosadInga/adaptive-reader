@@ -7,12 +7,16 @@
     "node": ">=24"
   },
   "scripts": {
+    "dev": "node --watch --env-file-if-exists=.env src/server.ts",
+    "start": "node src/server.ts",
     "parse": "node src/cli/parse.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/**/*.test.ts"
+    "test": "node --test \"src/**/*.test.ts\""
   },
   "dependencies": {
+    "@fastify/cors": "^11.3.0",
     "fast-xml-parser": "^5.11.1",
+    "fastify": "^5.12.4",
     "jszip": "^3.10.2",
     "node-html-parser": "^9.0.4"
   },
