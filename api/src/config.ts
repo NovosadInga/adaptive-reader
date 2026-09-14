@@ -67,10 +67,11 @@ function readOrigin(env: NodeJS.ProcessEnv, name: string): string {
   } catch {
     throw new ConfigError(`${name} must be an origin like http://localhost:5173, got "${value}"`);
   }
+  // Browsers send the normalised form (lower-case scheme and host, default
+  // port dropped), so the value must equal it exactly — no path, no trailing
+  // slash, no `:443` after https. The message shows the expected spelling.
   if (parsed.origin !== value) {
-    throw new ConfigError(
-      `${name} must be exactly scheme://host[:port] with no path or trailing slash, got "${value}"`,
-    );
+    throw new ConfigError(`${name} must be a bare origin: expected "${parsed.origin}", got "${value}"`);
   }
   return value;
 }
