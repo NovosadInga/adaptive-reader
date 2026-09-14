@@ -36,7 +36,7 @@ Phase 1 — Вертикальний зріз. **Крок 1 із 4 викона�
     `routes/health.ts`, `.env.example`; `npm run dev` / `npm start`. `app.ts`
     збирає застосунок і не слухає порт — тести йдуть через `inject()`;
     `server.ts` — єдине місце з `listen`. Config за D31. Залежності:
-    `fastify` 5.12, `@fastify/cors` 11.3. 23 тести. Glob у `npm test` узято
+    `fastify` 5.12, `@fastify/cors` 11.3. Тестів у проєкті — 23 (було 14). Glob у `npm test` узято
     в лапки — раніше `sh` не бачив тестів прямо в `src/`.
 
 ## Наступний крок
