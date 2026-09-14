@@ -9,7 +9,7 @@ build/
 
 # Reader uploads never enter the repository
 uploads/
-books/
+books/*
 !books/public-domain/
 
 # Personal, machine-specific Claude Code settings - tool permissions granted on
