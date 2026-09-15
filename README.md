@@ -54,6 +54,10 @@ merged by the author. That shapes the process more than the stack does:
   GitHub after the PR opens. Neither blocks the merge; the author decides.
 - Every significant decision is recorded with its reasoning and its cost in
   `docs/DECISIONS.md`. The history is meant to be read, not just the code.
+- Claude Code hooks (`.claude/settings.json`) run the API typecheck and tests
+  after every `.ts` edit and before the agent ends a turn, so "done" means
+  green. They need `jq` on the machine; without it they report themselves
+  skipped rather than failing silently.
 - Secrets never enter the repository: API keys live in environment variables on
   the server, GitHub tokens in repository secrets, and both the local tooling
   and GitHub's push protection are configured to refuse them.
