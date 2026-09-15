@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "api: typecheck + tests",
+            "timeout": 60,
+            "command": "f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in \"$CLAUDE_PROJECT_DIR\"/api/*.ts) cd \"$CLAUDE_PROJECT_DIR/api\" && { npm run -s typecheck && npm test -s >/dev/null; } 2>&1 >&2 || { echo \"api typecheck or tests failed after editing $f\" >&2; exit 2; } ;; esac"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "api: final typecheck + tests",
+            "timeout": 60,
+            "command": "[ \"$(jq -r '.stop_hook_active // false')\" = true ] && exit 0; cd \"$CLAUDE_PROJECT_DIR/api\" || exit 0; git status --porcelain -- '*.ts' | grep -q . || exit 0; { npm run -s typecheck && npm test -s >/dev/null; } 2>&1 >&2 || { echo 'api typecheck or tests fail with uncommitted .ts changes - fix before finishing' >&2; exit 2; }"
+          }
+        ]
+      }
+    ]
+  }
+}
