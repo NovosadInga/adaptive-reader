@@ -47,6 +47,19 @@ test('re-adding an id refreshes it instead of counting it twice', () => {
   assert.equal(store.get('c')?.meta.title, 'C');
 });
 
+test('reading a book refreshes it, so the book being read is not evicted', () => {
+  const store = new BookStore(2);
+  store.put('a', fakeBook('A'));
+  store.put('b', fakeBook('B'));
+  store.get('a');
+  store.put('c', fakeBook('C'));
+
+  // "a" was read after "b" was added, so "b" is the least recently used.
+  assert.equal(store.get('b'), undefined);
+  assert.equal(store.get('a')?.meta.title, 'A');
+  assert.equal(store.get('c')?.meta.title, 'C');
+});
+
 test('rejects a capacity that is not a positive integer', () => {
   assert.throws(() => new BookStore(0), RangeError);
   assert.throws(() => new BookStore(1.5), RangeError);
