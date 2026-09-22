@@ -1,0 +1,88 @@
+import { test, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import Fastify from 'fastify';
+import { buildApp } from '../app.ts';
+import { booksRoutes } from './books.ts';
+import { BookStore, bookIdFromBytes } from '../books/store.ts';
+
+const FIXTURE_NAME = 'pg215-the-call-of-the-wild.epub';
+const FIXTURE_URL = new URL(`../../../books/public-domain/${FIXTURE_NAME}`, import.meta.url);
+const epub = await readFile(FIXTURE_URL);
+
+const app = buildApp({ port: 0, host: '127.0.0.1', corsOrigin: 'http://localhost:5173' });
+after(() => app.close());
+
+/** What a browser sends for `<input type="file">` submitted through `FormData`. */
+function upload(bytes: Uint8Array, fileName: string): FormData {
+  const form = new FormData();
+  form.append('file', new Blob([bytes]), fileName);
+  return form;
+}
+
+test('POST /books parses an EPUB and answers 201 with id, metadata and stats', async () => {
+  const response = await app.inject({ method: 'POST', url: '/books', payload: upload(epub, FIXTURE_NAME) });
+
+  assert.equal(response.statusCode, 201);
+  assert.deepEqual(response.json(), {
+    id: bookIdFromBytes(epub),
+    meta: { title: 'The call of the wild', author: 'Jack London', language: 'en' },
+    stats: { chapters: 9, paragraphs: 342, sentences: 1686, words: 32141 },
+  });
+});
+
+test('the same file uploaded twice gets the same id', async () => {
+  const first = await app.inject({ method: 'POST', url: '/books', payload: upload(epub, FIXTURE_NAME) });
+  const second = await app.inject({ method: 'POST', url: '/books', payload: upload(epub, 'renamed.epub') });
+
+  assert.equal(second.statusCode, 201);
+  assert.equal(second.json().id, first.json().id);
+});
+
+test('a damaged file answers 422 with the parse reason, not a stack trace', async () => {
+  const response = await app.inject({
+    method: 'POST',
+    url: '/books',
+    payload: upload(Buffer.from('this is not a zip archive'), 'broken.epub'),
+  });
+
+  assert.equal(response.statusCode, 422);
+  const body = response.json();
+  assert.equal(body.error.reason, 'corrupt');
+  assert.equal(typeof body.error.message, 'string');
+  assert.equal(body.stack, undefined);
+});
+
+test('a multipart request without a file answers 400', async () => {
+  const form = new FormData();
+  form.append('note', 'no file here');
+  const response = await app.inject({ method: 'POST', url: '/books', payload: form });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.json().error.reason, 'no-file');
+});
+
+test('a request that is not multipart answers 400', async () => {
+  const response = await app.inject({
+    method: 'POST',
+    url: '/books',
+    headers: { 'content-type': 'application/json' },
+    payload: { file: 'nope' },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.json().error.reason, 'not-multipart');
+});
+
+test('a file over the size limit answers 413', async () => {
+  // A small limit, so the test does not need to allocate 20 MB: the plugin
+  // counts bytes as they stream in and stops at the limit either way.
+  const limited = Fastify();
+  after(() => limited.close());
+  await limited.register(booksRoutes, { store: new BookStore(), maxFileBytes: 1024 });
+
+  const response = await limited.inject({ method: 'POST', url: '/books', payload: upload(epub, FIXTURE_NAME) });
+
+  assert.equal(response.statusCode, 413);
+  assert.equal(response.json().error.reason, 'too-large');
+});
