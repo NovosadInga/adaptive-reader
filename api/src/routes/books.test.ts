@@ -84,6 +84,73 @@ test('a request that is not multipart answers 400', async () => {
   assert.equal(response.json().error.reason, 'not-multipart');
 });
 
+test('GET /books/:id returns metadata and the chapter list without any text', async () => {
+  const uploaded = await app.inject({ method: 'POST', url: '/books', payload: upload(epub, FIXTURE_NAME) });
+  const { id } = uploaded.json();
+
+  const response = await app.inject({ method: 'GET', url: `/books/${id}` });
+
+  assert.equal(response.statusCode, 200);
+  const body = response.json();
+  assert.equal(body.id, id);
+  assert.deepEqual(body.meta, uploaded.json().meta);
+  assert.deepEqual(body.stats, uploaded.json().stats);
+  assert.equal(body.chapters.length, 9);
+  assert.deepEqual(body.chapters[2], {
+    id: 'c2',
+    index: 2,
+    title: 'Chapter II. The Law of Club and Fang',
+    paragraphs: 26,
+    sentences: 167,
+  });
+  // The list carries counts, not paragraphs: no sentence text anywhere.
+  assert.equal(response.body.includes('Buck'), false);
+  assert.equal(
+    body.chapters.reduce((total: number, chapter: { sentences: number }) => total + chapter.sentences, 0),
+    body.stats.sentences,
+  );
+});
+
+test('GET /books/:id/chapters/:index returns one chapter with sentence ids intact', async () => {
+  const { id } = (await app.inject({ method: 'POST', url: '/books', payload: upload(epub, FIXTURE_NAME) })).json();
+
+  const response = await app.inject({ method: 'GET', url: `/books/${id}/chapters/2` });
+
+  assert.equal(response.statusCode, 200);
+  const chapter = response.json();
+  assert.equal(chapter.id, 'c2');
+  assert.equal(chapter.index, 2);
+  assert.equal(chapter.title, 'Chapter II. The Law of Club and Fang');
+  assert.equal(chapter.paragraphs[0].id, 'c2p0');
+  assert.equal(chapter.paragraphs[0].sentences[0].id, 'c2p0s0');
+  assert.equal(typeof chapter.paragraphs[0].sentences[0].text, 'string');
+});
+
+test('an unknown book id answers 404 with a hint to upload again', async () => {
+  const book = await app.inject({ method: 'GET', url: '/books/0000000000000000' });
+  const chapter = await app.inject({ method: 'GET', url: '/books/0000000000000000/chapters/0' });
+
+  assert.equal(book.statusCode, 404);
+  assert.equal(book.json().error.reason, 'not-found');
+  assert.match(book.json().error.message, /upload/i);
+  assert.equal(chapter.statusCode, 404);
+  assert.equal(chapter.json().error.reason, 'not-found');
+});
+
+test('a chapter index that does not exist answers 404, a malformed one 400', async () => {
+  const { id } = (await app.inject({ method: 'POST', url: '/books', payload: upload(epub, FIXTURE_NAME) })).json();
+
+  const missing = await app.inject({ method: 'GET', url: `/books/${id}/chapters/9` });
+  assert.equal(missing.statusCode, 404);
+  assert.equal(missing.json().error.reason, 'not-found');
+
+  for (const bad of ['-1', '1e2', 'abc', '1.5']) {
+    const response = await app.inject({ method: 'GET', url: `/books/${id}/chapters/${bad}` });
+    assert.equal(response.statusCode, 400, `index "${bad}"`);
+    assert.equal(response.json().error.reason, 'bad-index');
+  }
+});
+
 test('a file over the size limit answers 413', async () => {
   // A small limit, so the test does not need to allocate 20 MB.
   const limited = Fastify();

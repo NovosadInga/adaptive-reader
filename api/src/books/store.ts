@@ -7,9 +7,9 @@ import type { Book } from '../domain/book.ts';
  * Books are keyed by a hash of the uploaded bytes, so uploading the same file
  * again lands on the same id instead of a second copy — during development
  * the same book is uploaded many times. The store is bounded: past `capacity`
- * the book that was added or refreshed longest ago is dropped, so a public
- * demo cannot grow the process until it is killed. Everything here is lost on
- * restart; that is the accepted cost of D19.
+ * the book that was used longest ago (least recently added or read) is
+ * dropped, so a public demo cannot grow the process until it is killed.
+ * Everything here is lost on restart; that is the accepted cost of D19.
  */
 export class BookStore {
   // A Map keeps insertion order, which is the eviction order below.
@@ -27,8 +27,17 @@ export class BookStore {
     return this.#books.size;
   }
 
+  /**
+   * Reading a book also moves it to the newest position: a book someone is
+   * in the middle of must not be the one evicted by ten fresh uploads.
+   */
   get(id: string): Book | undefined {
-    return this.#books.get(id);
+    const book = this.#books.get(id);
+    if (book !== undefined) {
+      this.#books.delete(id);
+      this.#books.set(id, book);
+    }
+    return book;
   }
 
   /**

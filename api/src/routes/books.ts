@@ -31,14 +31,22 @@ interface ErrorBody {
 }
 
 /**
- * `POST /books` — upload a book file, parse it on the server (D4), keep the
- * result in memory (D19) and answer with the id and metadata. The text
- * itself is not in the response: chapters are fetched one at a time.
+ * Book routes. The book is served in pieces so the phone never holds all of
+ * it (D4): upload and metadata separately from the chapter list, and each
+ * chapter's text separately again.
  *
- * The request is `multipart/form-data` with the book in a file field — what
- * a browser sends for `<input type="file">` through `FormData`. An upload
- * over the limit is answered 413 the moment the limit is crossed and the
- * connection is closed, so the rest of the file is never read.
+ * `POST /books` — upload a book file, parse it on the server, keep the
+ * result in memory (D19) and answer with the id and metadata. The request is
+ * `multipart/form-data` with the book in a file field — what a browser sends
+ * for `<input type="file">` through `FormData`. An upload over the limit is
+ * answered 413 the moment the limit is crossed and the connection is closed,
+ * so the rest of the file is never read.
+ *
+ * `GET /books/:id` — metadata, totals and the chapter list without any text.
+ *
+ * `GET /books/:id/chapters/:index` — one chapter with its paragraphs and
+ * sentences, ids intact (D16), so the reader can name a sentence when it
+ * asks for a translation.
  */
 export async function booksRoutes(app: FastifyInstance, options: BooksRoutesOptions): Promise<void> {
   const { store, maxFileBytes = DEFAULT_MAX_FILE_BYTES } = options;
@@ -95,6 +103,46 @@ export async function booksRoutes(app: FastifyInstance, options: BooksRoutesOpti
     return reply.code(201).send({ id, meta: book.meta, stats: book.stats });
   });
 
+  app.get<{ Params: { id: string } }>('/books/:id', async (request, reply) => {
+    const { id } = request.params;
+    const book = store.get(id);
+    if (!book) {
+      return reply.code(404).send(bookNotFound(id));
+    }
+    return {
+      id,
+      meta: book.meta,
+      stats: book.stats,
+      chapters: book.chapters.map((chapter) => ({
+        id: chapter.id,
+        index: chapter.index,
+        title: chapter.title,
+        paragraphs: chapter.paragraphs.length,
+        sentences: chapter.paragraphs.reduce((total, paragraph) => total + paragraph.sentences.length, 0),
+      })),
+    };
+  });
+
+  app.get<{ Params: { id: string; index: string } }>('/books/:id/chapters/:index', async (request, reply) => {
+    const { id } = request.params;
+    const book = store.get(id);
+    if (!book) {
+      return reply.code(404).send(bookNotFound(id));
+    }
+    // Route parameters are strings; only a plain non-negative integer is a
+    // chapter index. `Number("1e2")` or `Number("")` would pass silently.
+    if (!/^\d+$/.test(request.params.index)) {
+      return reply.code(400).send(fail('bad-index', 'The chapter index must be a non-negative integer.'));
+    }
+    const chapter = book.chapters[Number(request.params.index)];
+    if (!chapter) {
+      return reply
+        .code(404)
+        .send(fail('not-found', `Book "${id}" has ${book.chapters.length} chapters; there is no chapter ${request.params.index}.`));
+    }
+    return chapter;
+  });
+
   // Scoped to this plugin: other routes keep Fastify's default handler.
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof BookParseError) {
@@ -123,4 +171,10 @@ export async function booksRoutes(app: FastifyInstance, options: BooksRoutesOpti
 
 function fail(reason: string, message: string): ErrorBody {
   return { error: { reason, message } };
+}
+
+function bookNotFound(id: string): ErrorBody {
+  // Books live only in memory (D19): a restart or ten newer uploads drop
+  // them. The message says what to do rather than just "not found".
+  return fail('not-found', `No book with id "${id}" is loaded. Upload the file again.`);
 }
