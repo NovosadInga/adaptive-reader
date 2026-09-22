@@ -31,12 +31,21 @@ test('POST /books parses an EPUB and answers 201 with id, metadata and stats', a
   });
 });
 
-test('the same file uploaded twice gets the same id', async () => {
-  const first = await app.inject({ method: 'POST', url: '/books', payload: upload(epub, FIXTURE_NAME) });
-  const second = await app.inject({ method: 'POST', url: '/books', payload: upload(epub, 'renamed.epub') });
+test('the same file uploaded twice gets the same id and is not parsed again', async () => {
+  const store = new BookStore();
+  const own = Fastify();
+  after(() => own.close());
+  await own.register(booksRoutes, { store });
+
+  const first = await own.inject({ method: 'POST', url: '/books', payload: upload(epub, FIXTURE_NAME) });
+  const second = await own.inject({ method: 'POST', url: '/books', payload: upload(epub, 'renamed.epub') });
 
   assert.equal(second.statusCode, 201);
   assert.equal(second.json().id, first.json().id);
+  assert.equal(store.size, 1);
+  // The stored book still carries the first file name: the second upload
+  // was recognised by its bytes and the parser did not run again.
+  assert.equal(store.get(first.json().id)?.source.fileName, FIXTURE_NAME);
 });
 
 test('a damaged file answers 422 with the parse reason, not a stack trace', async () => {

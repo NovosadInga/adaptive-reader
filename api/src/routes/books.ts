@@ -55,8 +55,11 @@ export async function booksRoutes(app: FastifyInstance, options: BooksRoutesOpti
 
     // Throws the plugin's "too large" error as soon as the limit is crossed.
     const bytes = await part.toBuffer();
-    const book = await parseEpub(bytes, part.filename);
     const id = bookIdFromBytes(bytes);
+
+    // The id is the content hash, so a known id means the same bytes: skip
+    // the parse and refresh the book's place in the eviction order.
+    const book = store.get(id) ?? (await parseEpub(bytes, part.filename));
     store.put(id, book);
 
     // 201 for a repeated upload too: the same bytes yield the same id, so the
