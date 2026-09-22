@@ -1,6 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { Readable } from 'node:stream';
 import Fastify from 'fastify';
 import { buildApp } from '../app.ts';
 import { booksRoutes } from './books.ts';
@@ -84,13 +85,43 @@ test('a request that is not multipart answers 400', async () => {
 });
 
 test('a file over the size limit answers 413', async () => {
-  // A small limit, so the test does not need to allocate 20 MB: the plugin
-  // counts bytes as they stream in and stops at the limit either way.
+  // A small limit, so the test does not need to allocate 20 MB.
   const limited = Fastify();
   after(() => limited.close());
   await limited.register(booksRoutes, { store: new BookStore(), maxFileBytes: 1024 });
 
   const response = await limited.inject({ method: 'POST', url: '/books', payload: upload(epub, FIXTURE_NAME) });
+
+  assert.equal(response.statusCode, 413);
+  assert.equal(response.json().error.reason, 'too-large');
+  assert.equal(response.headers.connection, 'close');
+});
+
+test('an oversized upload is refused before it has been read to the end', { timeout: 5000 }, async () => {
+  const limited = Fastify();
+  after(() => limited.close());
+  await limited.register(booksRoutes, { store: new BookStore(), maxFileBytes: 1024 });
+
+  // A hand-built multipart body whose file part starts, crosses the limit
+  // and then never ends — like a client still uploading. If the route
+  // waited for the part to finish, this request would never be answered
+  // and the test would hit its timeout.
+  const boundary = 'test-boundary';
+  const body = new Readable({ read() {} });
+  body.push(
+    `--${boundary}\r\n` +
+      'Content-Disposition: form-data; name="file"; filename="endless.epub"\r\n' +
+      'Content-Type: application/epub+zip\r\n\r\n',
+  );
+  body.push(Buffer.alloc(4096, 'x'));
+  after(() => body.destroy());
+
+  const response = await limited.inject({
+    method: 'POST',
+    url: '/books',
+    headers: { 'content-type': `multipart/form-data; boundary=${boundary}` },
+    payload: body,
+  });
 
   assert.equal(response.statusCode, 413);
   assert.equal(response.json().error.reason, 'too-large');

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import multipart from '@fastify/multipart';
+import multipart, { type MultipartFile } from '@fastify/multipart';
 import { BookParseError } from '../domain/book.ts';
 import { parseEpub } from '../parsers/epub.ts';
 import { BookStore, bookIdFromBytes } from '../books/store.ts';
@@ -36,9 +36,9 @@ interface ErrorBody {
  * itself is not in the response: chapters are fetched one at a time.
  *
  * The request is `multipart/form-data` with the book in a file field — what
- * a browser sends for `<input type="file">` through `FormData`. The plugin
- * counts bytes as they arrive and stops at the limit, so an oversized upload
- * is refused without being read to the end.
+ * a browser sends for `<input type="file">` through `FormData`. An upload
+ * over the limit is answered 413 the moment the limit is crossed and the
+ * connection is closed, so the rest of the file is never read.
  */
 export async function booksRoutes(app: FastifyInstance, options: BooksRoutesOptions): Promise<void> {
   const { store, maxFileBytes = DEFAULT_MAX_FILE_BYTES } = options;
@@ -47,14 +47,42 @@ export async function booksRoutes(app: FastifyInstance, options: BooksRoutesOpti
   // and Fastify scopes a plugin to the routes registered alongside it.
   await app.register(multipart, { limits: { fileSize: maxFileBytes, files: 1 } });
 
+  const { RequestFileTooLargeError, InvalidMultipartContentTypeError } = app.multipartErrors;
+
+  /**
+   * `part.toBuffer()` rejects with the "too large" error only once the file
+   * part has ended — busboy discards the bytes past the limit but keeps
+   * reading them, so the whole upload would cross the network before the
+   * client heard 413. Busboy does emit `limit` at the byte it stops storing,
+   * so this races the buffer against that event and settles at once.
+   */
+  function readWithinLimit(part: MultipartFile): Promise<Buffer> {
+    const buffered = part.toBuffer();
+    // When `limit` wins, `buffered` still settles later, on its own; nobody
+    // is waiting for it by then, so its rejection must not go unhandled.
+    buffered.catch(() => {});
+
+    const limitReached = new Promise<never>((_resolve, reject) => {
+      const reject413 = () => reject(new RequestFileTooLargeError());
+      // The limit may have been hit while this handler was still being
+      // scheduled: busboy parses a whole network chunk synchronously.
+      if (part.file.truncated) {
+        reject413();
+      } else {
+        part.file.once('limit', reject413);
+      }
+    });
+
+    return Promise.race([buffered, limitReached]);
+  }
+
   app.post('/books', async (request, reply) => {
     const part = await request.file();
     if (!part) {
       return reply.code(400).send(fail('no-file', 'Send the book as a file field of a multipart/form-data request.'));
     }
 
-    // Throws the plugin's "too large" error as soon as the limit is crossed.
-    const bytes = await part.toBuffer();
+    const bytes = await readWithinLimit(part);
     const id = bookIdFromBytes(bytes);
 
     // The id is the content hash, so a known id means the same bytes: skip
@@ -67,15 +95,22 @@ export async function booksRoutes(app: FastifyInstance, options: BooksRoutesOpti
     return reply.code(201).send({ id, meta: book.meta, stats: book.stats });
   });
 
-  const { RequestFileTooLargeError, InvalidMultipartContentTypeError } = app.multipartErrors;
-
   // Scoped to this plugin: other routes keep Fastify's default handler.
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error, request, reply) => {
     if (error instanceof BookParseError) {
       return reply.code(422).send(fail(error.reason, error.message));
     }
     if (error instanceof RequestFileTooLargeError) {
-      return reply.code(413).send(fail('too-large', `The file is larger than the limit of ${maxFileBytes} bytes.`));
+      // The client is still sending. Left alone, Node would read the rest of
+      // the body into nowhere to keep the connection reusable, so once the
+      // 413 has been written the connection is closed instead. A client that
+      // only reads the response after finishing its upload may see the
+      // closed connection rather than the 413; that is the accepted cost.
+      reply.raw.once('finish', () => request.raw.destroy());
+      return reply
+        .code(413)
+        .header('connection', 'close')
+        .send(fail('too-large', `The file is larger than the limit of ${maxFileBytes} bytes.`));
     }
     if (error instanceof InvalidMultipartContentTypeError) {
       return reply.code(400).send(fail('not-multipart', 'The request must be multipart/form-data with the book as a file field.'));
