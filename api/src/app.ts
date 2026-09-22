@@ -2,6 +2,8 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import type { Config } from './config.ts';
 import { healthRoutes } from './routes/health.ts';
+import { booksRoutes } from './routes/books.ts';
+import { BookStore } from './books/store.ts';
 
 /**
  * Assembles the application without starting it: Fastify instance, plugins,
@@ -15,6 +17,8 @@ export function buildApp(config: Config): FastifyInstance {
   // responses unless the server names that origin in a CORS header.
   app.register(cors, { origin: config.corsOrigin });
   app.register(healthRoutes);
+  // One store for the process: every route that reads books shares it.
+  app.register(booksRoutes, { store: new BookStore() });
 
   return app;
 }
