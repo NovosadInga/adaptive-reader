@@ -53,6 +53,15 @@
 #
 # On a public repository GitHub withholds secrets from fork PRs, so this runs
 # only for branches inside the repository itself — which is how we work (D21).
+#
+# Changing THIS file is never verified by the pull request that changes it.
+# The action refuses to run when the workflow in the branch differs from the
+# one on the default branch ("Workflow validation failed. The workflow file
+# must exist and have identical content to the version on the repository's
+# default branch"), because otherwise a pull request could rewrite the
+# reviewer's prompt and have it run with access to the token. So a change
+# here shows its first real run on the NEXT pull request after it is merged —
+# plan on watching that one.
 
 name: Claude Code Review
 
