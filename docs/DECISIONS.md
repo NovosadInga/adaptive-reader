@@ -495,6 +495,9 @@ AI-запит (R5), тож зробити її параметром коштує
 | `skills/requirements/SKILL.md` | `sonnet` | `high` |
 | `agents/code-reviewer.md` | `sonnet` | `medium` |
 | `skills/review-pr/SKILL.md` | `haiku` | `low` |
+| `agents/pr-correctness.md` | `opus` | `medium` |
+| `agents/pr-security.md` | `sonnet` | `medium` |
+| `agents/pr-standards.md` | `sonnet` | `medium` |
 
 **Чому.** Без цих полів усе працює на моделі сесії, тобто найдорожчій, зокрема
 й на механічній роботі. Вартість — реальний критерій, а не другорядне
