@@ -28,6 +28,14 @@
 #
 # The orchestrator spawns them with the `Agent` tool (renamed from `Task` in
 # CLI 2.1.63), deduplicates what they return, and does the publishing itself.
+#
+# It must spawn them with `run_in_background: false`. The first three live
+# runs (#66 twice, #68 once) all ended green with no review whatsoever, and
+# the transcript of the third shows why: the agents were launched in the
+# background, the orchestrator wrote "I'll wait for their results", ended
+# its turn, and the session finished. A background agent reports into a
+# session that no longer exists. The cost was real — $0.32, $0.34, $0.48 —
+# and the pull requests got nothing for it.
 # The publishing is deliberately not left to the agents: the action buffers
 # inline comments and filters out ones that look like a subagent's test
 # probes (`classify_inline_comments`, on by default), so findings posted by a
@@ -101,6 +109,7 @@ jobs:
           fetch-depth: 1
 
       - uses: anthropics/claude-code-action@v1
+        id: claude
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # The action creates a comment on the PR before the model starts
@@ -120,13 +129,23 @@ jobs:
                for the change. If the description references an issue, read it
                with `gh issue view`.
 
-            2. Spawn all three agents with the Agent tool, in a single
-               message so they run in parallel: `pr-correctness`,
-               `pr-security`, `pr-standards`. Give each of them the pull
-               request number and tell it to read the diff itself. Do not
-               summarise the diff for them — each agent must read the real
-               change, or its review is about your summary rather than the
-               code.
+            2. Spawn all three agents with the Agent tool — `pr-correctness`,
+               `pr-security`, `pr-standards` — in a single message so they
+               run in parallel, and pass `run_in_background: false` to every
+               one of them. This is not optional: the Agent tool runs a
+               subagent in the background by default, and a backgrounded
+               agent reports into a session that has already ended. When
+               that happens you have nothing to merge, you wait for results
+               that never arrive, and the run finishes green with no review
+               on the pull request at all. Give each agent the pull request
+               number and tell it to read the diff itself. Do not summarise
+               the diff for them — each agent must read the real change, or
+               its review is about your summary rather than the code.
+
+               Wait for all three to return before going further, and do not
+               end your turn until step 5 is done. If an agent returns
+               nothing usable, say so in the summary rather than leaving the
+               summary unwritten.
 
             3. Merge their findings. Drop duplicates — the same point on the
                same file and line — keeping the fullest explanation. Drop
@@ -185,3 +204,40 @@ jobs:
             --allowedTools "Agent,Read,Grep,Glob,mcp__github_comment__update_claude_comment,mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh issue view:*)"
             --model claude-sonnet-5
             --max-turns 25
+
+      # Keep the run's own transcript. Without this step a failed review is
+      # a black box: the job log shows the session starting and its final
+      # `result` line, and nothing in between — no tool calls, no agent
+      # results. That is exactly how the runs on #66 were misread as "the
+      # agents never started", when `modelUsage` in fact listed Opus, the
+      # model only `pr-correctness` uses. The action writes the full
+      # transcript on the runner and reports its path as `execution_file`;
+      # the runner is then thrown away, so we upload the file as an
+      # artifact and can read what the agents returned and where the
+      # orchestrator stopped.
+      #
+      # `if: always()` because the interesting runs are the ones that fail.
+      # The transcript holds the prompt, the PR diff and the review — all
+      # of it already public in this repository — and no secrets: the token
+      # is passed to the action as an input, not through the model. Artifacts
+      # of a public repository are downloadable by anyone, so nothing that
+      # is not already public may be added to this file later.
+      # The condition, not just `always()`: when the action skips itself —
+      # which is what it does on a pull request that edits this workflow —
+      # it still exits successfully and simply leaves `execution_file`
+      # empty. Uploading then fails with "Input required and not supplied:
+      # path" and paints the job red for a reason that has nothing to do
+      # with the review. Seen on #67, the very pull request that added this
+      # step.
+      - if: always() && steps.claude.outputs.execution_file != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: claude-review-transcript-${{ github.event.pull_request.number }}-${{ github.run_attempt }}
+          path: ${{ steps.claude.outputs.execution_file }}
+          # Long enough to look at a review after a weekend, short enough
+          # not to pile up: this is a debugging aid, not a record.
+          retention-days: 14
+          # A run that never got as far as writing the file should not paint
+          # the job with a warning annotation; the missing artifact is the
+          # signal.
+          if-no-files-found: warn
