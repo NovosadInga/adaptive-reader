@@ -1,0 +1,71 @@
+# CodeRabbit review configuration (D34).
+#
+# CodeRabbit is the second reviewer required by D28. The first is the local
+# `code-reviewer` agent, run through `/review-pr` before the pull request is
+# opened; this one runs afterwards, in another process, with no access to the
+# session that wrote the code. Neither of them blocks a merge — the author
+# decides.
+#
+# The review criteria below are a working summary. The decisions themselves
+# live in `docs/DECISIONS.md`, which stays the source of truth.
+
+language: en-US
+
+reviews:
+  profile: chill
+  high_level_summary: true
+  review_status: true
+  poem: false
+
+  auto_review:
+    enabled: true
+
+  path_instructions:
+    - path: "**"
+      instructions: |
+        This repository is public. Never accept an API key, token, password or
+        any other secret in the code, in a commit or in a configuration file:
+        keys reach the server only through environment variables.
+
+        One pull request carries one topic (D29). Flag any change that does not
+        belong to the stated subject, except documentation the change itself
+        requires.
+
+        The description must follow `.github/pull_request_template.md`, and it
+        must contain a manual check scenario in the form "run this — you will
+        see that".
+
+        Code, comments, commit messages, pull request titles, issues and the
+        root `README.md` are written in English (D23). Files under `docs/` and
+        `.claude/` are written in Ukrainian; do not ask for them to be
+        translated.
+
+    - path: "api/**/*.ts"
+      instructions: |
+        Look for edge cases and error handling: what happens on malformed
+        input, on a missing file, on a failed parse. Check that new behaviour
+        has a test. Check the change against the decisions recorded in
+        `docs/DECISIONS.md` and say which decision a violation touches.
+
+    - path: ".github/workflows/**"
+      instructions: |
+        Check that no secret is printed, echoed or written into an artifact,
+        that third-party actions are pinned to a commit SHA rather than a
+        moving tag, and that a step cannot fail silently — a green job must
+        mean the work actually happened.
+
+    - path: "docs/**"
+      instructions: |
+        These documents are written in Ukrainian and that is correct (D23).
+        Check that facts stay consistent between documents: a number, a date, a
+        decision code or a file path stated in one file must not contradict
+        another. Decisions are never deleted, only superseded with a notice
+        pointing at the decision that replaced them.
+
+    - path: "**/package.json"
+      instructions: |
+        Dependencies are the main real risk in this project, because an
+        installed package runs code on the author's machine. For every added
+        package ask: is it widely used with a live release, does it run a
+        `postinstall` script, and does the pull request description explain
+        what it does and why this one.

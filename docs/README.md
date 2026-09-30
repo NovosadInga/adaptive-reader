@@ -130,8 +130,8 @@ branch that only edits documentation is prefixed `docs/` (D24).
 
 One pull request covers one topic; a side fix noticed on the way gets its own
 branch (D29). Every pull request is reviewed twice — by the local
-`code-reviewer` agent via `/review-pr` before push, and by Claude Code Review
-on GitHub after it is opened — and its description explains the change in
+`code-reviewer` agent via `/review-pr` before push, and by CodeRabbit on
+GitHub after it is opened — and its description explains the change in
 full, per `.github/pull_request_template.md` (D28). Neither reviewer blocks a
 merge; the author decides.
 

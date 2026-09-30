@@ -50,8 +50,8 @@ merged by the author. That shapes the process more than the stack does:
 - Every task is one issue, one short branch and one pull request. `main` only
   changes through a pull request.
 - Every pull request is reviewed twice, independently of the session that wrote
-  it: by a local reviewer agent before the push, and by Claude Code Review on
-  GitHub after the PR opens. Neither blocks the merge; the author decides.
+  it: by a local reviewer agent before the push, and by CodeRabbit on GitHub
+  after the PR opens. Neither blocks the merge; the author decides.
 - Every significant decision is recorded with its reasoning and its cost in
   `docs/DECISIONS.md`. The history is meant to be read, not just the code.
 - Claude Code hooks (`.claude/settings.json`) run the API typecheck and tests
