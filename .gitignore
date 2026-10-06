@@ -19,3 +19,7 @@ books/*
 # skills are part of how this project is built, they declare their model and
 # effort (D26), and the documentation refers to them.
 .claude/settings.local.json
+
+# Local /review-pr round history, one file per branch: what each round found
+# and what the author decided. It only serves the next round on this machine.
+.review-rounds/
