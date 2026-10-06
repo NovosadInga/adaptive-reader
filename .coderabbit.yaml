@@ -7,9 +7,16 @@
 # decides.
 #
 # The review criteria below are a working summary. The decisions themselves
-# live in `docs/DECISIONS.md`, which stays the source of truth.
+# live in `docs/DECISIONS.md`, which stays the source of truth; CodeRabbit
+# reads it directly through `knowledge_base` below.
 
 language: en-US
+
+knowledge_base:
+  code_guidelines:
+    # `**/CLAUDE.md` is picked up by default; the decisions need naming.
+    filePatterns:
+      - "docs/DECISIONS.md"
 
 reviews:
   profile: chill
