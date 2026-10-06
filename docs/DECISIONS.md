@@ -495,7 +495,7 @@ AI-запит (R5), тож зробити її параметром коштує
 | `skills/end-session/SKILL.md` | `opus` | `medium` |
 | `skills/requirements/SKILL.md` | `sonnet` | `high` |
 | `agents/code-reviewer.md` | `sonnet` | `medium` |
-| `skills/review-pr/SKILL.md` | `haiku` | `low` |
+| `skills/review-pr/SKILL.md` | `sonnet` | `medium` |
 | `agents/pr-correctness.md` | `opus` | `medium` |
 | `agents/pr-security.md` | `sonnet` | `medium` |
 | `agents/pr-standards.md` | `sonnet` | `medium` |
@@ -505,6 +505,11 @@ AI-запит (R5), тож зробити її параметром коштує
 міркування: проєкт розрахований на щоденні короткі сесії, і різниця
 накопичується. Водночас економія не є самоціллю — там, де помилка дорога й
 непомітна одразу (промпт підказки, дизайн читання), лишається Opus.
+
+`review-pr` спершу був на `haiku`/`low` як простий запуск рев'ювера. Згодом
+(#75) скіл почав вести історію кіл: записувати рішення авторки й дослівні
+висновки. Помилка там тиха й ламає наступні кола, тому його переведено на
+`sonnet`/`medium`.
 
 Використовуються родинні аліаси (`opus`, `sonnet`), а не повні ID: аліас не
 застаріває з виходом наступної версії моделі.
