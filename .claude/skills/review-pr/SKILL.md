@@ -2,7 +2,9 @@
 name: review-pr
 description: Перевірити поточну гілку перед створенням pull request — запустити незалежного рев'ювера code-reviewer і показати його висновок. Викликати після завершення роботи в гілці, перед git push і gh pr create.
 # Haiku at low effort: this skill is a launcher. All the thinking happens in the
-# code-reviewer agent (Sonnet, medium); here there is nothing to reason about.
+# code-reviewer agent (Sonnet, medium); here the only work is carrying earlier
+# verdicts and the author's decisions into the task, which is copying, not
+# reasoning.
 model: haiku
 effort: low
 ---
@@ -19,6 +21,15 @@ effort: low
 2. Запусти агента `code-reviewer` (через Agent tool, subagent_type
    `code-reviewer`) із завданням: «Перевір зміни поточної гілки відносно
    `main` за своїм чеклістом і дай висновок у своєму форматі.»
+
+   Якщо в цій сесії по цій гілці вже були кола `/review-pr`, додай до
+   завдання блок **«Попередні кола»**. Агент не пам'ятає попередніх запусків;
+   без цього блоку він починає з нуля, піднімає закрите й міняє рівні знахідок.
+   У блок — для кожного кола:
+   - висновок рев'ювера дослівно;
+   - рішення авторки по кожній знахідці: «виправлено комітом `<хеш>`»,
+     «відхилено авторкою — <чому>» або «перевірено зовні — <як і що
+     показало>». Знахідка без рішення — «відкрита».
 3. Покажи висновок автору **дослівно**, без скорочень і без власних
    виправлень до нього — це незалежна думка, і її цінність саме в цьому.
 4. Після висновку додай один рядок від себе: чи згоден ти з ним, і якщо
