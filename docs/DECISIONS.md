@@ -775,10 +775,11 @@ PR #65 пропустився за 11 секунд із повідомлення
 GitHub App на репозиторій. Власний `.github/workflows/claude-code-review.yml`
 видаляється. Критерії рев'ю переносяться в `.coderabbit.yaml` у корені
 (`path_instructions` на області: `api/**/*.ts`, `.github/workflows/**`,
-`docs/**`, `package.json`). На `docs/DECISIONS.md` CodeRabbit ще належить
-скерувати через налаштування Code Guidelines, щоб він читав рішення
-першоджерелом, а не переказом у конфігу, — це робиться у веб-інтерфейсі
-сервісу після злиття #70 і на момент цього запису не зроблено. Агенти-файли
+`docs/**`, `package.json`). На `docs/DECISIONS.md` CodeRabbit скеровано
+через Code Guidelines, щоб він читав рішення першоджерелом, а не переказом у
+конфігу. Планувалося у веб-інтерфейсі сервісу, але зроблено ключем
+`knowledge_base.code_guidelines` у `.coderabbit.yaml`: так налаштування живе
+в git і проходить рев'ю разом із кодом. Агенти-файли
 `pr-correctness`, `pr-security`, `pr-standards` лишаються в `.claude/agents/`
 як ракурси для локального запуску, коли зміна варта глибшої перевірки.
 Локальне рев'ю (`code-reviewer` через `/review-pr`) не змінюється. CodeRabbit
