@@ -24,6 +24,9 @@ reviews:
   review_status: true
   poem: false
 
+  # Kept on, but it has no effect for now: since #85 the service skips this
+  # repository's pull requests ("fewer than 10 stars"). A review starts only
+  # when the pull request gets the comment "@coderabbitai review" (D34).
   auto_review:
     enabled: true
 
