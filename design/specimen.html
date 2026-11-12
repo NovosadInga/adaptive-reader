@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reader Specimen</title>
+<!--
+  The reading surface as decided in D36, built only from tokens.css.
+  Open it on a phone: this page is the reference the frontend (#18) is
+  checked against. The controls at the bottom belong to the specimen, not to
+  the reader; the real screens are designed in #40.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,300..700;1,7..72,300..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400..700&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+  }
+
+  main {
+    max-width: 36rem;
+    margin-inline: auto;
+    padding-inline: var(--page-gutter);
+    padding-block: 24px 10rem;
+    display: grid;
+    gap: 2rem;
+  }
+
+  .ui { font-size: var(--ui-size); line-height: var(--ui-leading); }
+
+  .label {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0;
+  }
+
+  .progress {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--color-muted);
+    border-bottom: 1px solid var(--color-rule);
+    padding-bottom: 0.75rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .book {
+    font-family: var(--font-book);
+    font-size: var(--book-size);
+    line-height: var(--book-leading);
+    font-weight: var(--book-weight);
+    font-optical-sizing: auto;
+  }
+  .book h1 {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 1.25rem;
+    line-height: 1.3;
+    text-wrap: balance;
+    margin: 0 0 1em;
+  }
+  .book p { margin: 0; }
+  .book p + p { text-indent: var(--book-indent); }
+
+  mark {
+    background: var(--color-highlight);
+    color: inherit;
+    border-radius: 3px;
+    padding-inline: 1px;
+  }
+
+  .hint {
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-rule);
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+    padding: 16px 20px 20px;
+    display: grid;
+    gap: 0.75rem;
+  }
+  .hint p { margin: 0; }
+  .hint .word { color: var(--color-muted); }
+  .hint .word b { color: var(--color-text); font-weight: 600; }
+  .hint .source {
+    font-family: var(--font-book);
+    font-size: var(--hint-size);
+    line-height: 1.55;
+    font-weight: var(--book-weight);
+  }
+  .hint .target { font-size: var(--hint-size); line-height: 1.5; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .actions button {
+    min-height: var(--tap-min);
+    padding: 0 16px;
+    border-radius: var(--radius-control);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .primary { background: var(--color-accent); color: var(--color-on-accent); border: 1px solid var(--color-accent); }
+  .secondary { background: transparent; color: var(--color-accent); border: 1px solid var(--color-rule); }
+
+  .controls {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    background: var(--color-bg);
+    border-top: 1px solid var(--color-rule);
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    gap: 8px;
+  }
+  .row { display: grid; gap: 6px; max-width: 36rem; width: 100%; margin-inline: auto; }
+  .row.three { grid-template-columns: repeat(3, 1fr); }
+  .row.five { grid-template-columns: repeat(5, 1fr); }
+  .controls button {
+    min-height: var(--tap-min);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-control);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--ui-size);
+    padding: 0 4px;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+  }
+  .controls button[aria-pressed="true"] {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-on-accent);
+    font-weight: 600;
+  }
+  button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="progress ui" aria-label="Reading progress sample">
+    <span>The Call of the Wild</span>
+    <span>Chapter I · 92%</span>
+  </div>
+
+  <article class="book">
+    <h1>Chapter I. Into the Primitive</h1>
+    <p>Buck saw money pass between them, and was not surprised when Curly, a good-natured Newfoundland, and he were led away by the little <mark>weazened</mark> man. That was the last he saw of the man in the red sweater, and as Curly and he looked at receding Seattle from the deck of the <i>Narwhal</i>, it was the last he saw of the warm Southland. Curly and he were taken below by Perrault and turned over to a black-faced giant called François. Perrault was a French-Canadian, and swarthy; but François was a French-Canadian half-breed, and twice as swarthy. They were a new kind of men to Buck (of which he was destined to see many more), and while he developed no affection for them, he none the less grew honestly to respect them. He speedily learned that Perrault and François were fair men, calm and impartial in administering justice, and too wise in the way of dogs to be fooled by dogs.</p>
+    <p>In the ’tween-decks of the <i>Narwhal</i>, Buck and Curly joined two other dogs. One of them was a big, snow-white fellow from Spitzbergen who had been brought away by a whaling captain, and who had later accompanied a Geological Survey into the Barrens. He was friendly, in a treacherous sort of way, smiling into one’s face the while he meditated some underhand trick, as, for instance, when he stole from Buck’s food at the first meal. As Buck sprang to punish him, the lash of François’s whip sang through the air, reaching the culprit first; and nothing remained to Buck but to recover the bone. That was fair of François, he decided, and the half-breed began his rise in Buck’s estimation.</p>
+    <p>The other dog made no advances, nor received any; also, he did not attempt to steal from the newcomers. He was a gloomy, morose fellow, and he showed Curly plainly that all he desired was to be left alone, and further, that there would be trouble if he were not left alone. “Dave” he was called, and he ate and slept, or yawned between times, and took interest in nothing, not even when the <i>Narwhal</i> crossed Queen Charlotte Sound and rolled and pitched and bucked like a thing possessed. When Buck and Curly grew excited, half wild with fear, he raised his head as though annoyed, favored them with an incurious glance, yawned, and went to sleep again.</p>
+    <p>Day and night the ship throbbed to the tireless pulse of the propeller, and though one day was very like another, it was apparent to Buck that the weather was steadily growing colder. At last, one morning, the propeller was quiet, and the <i>Narwhal</i> was pervaded with an atmosphere of excitement. He felt it, as did the other dogs, and knew that a change was at hand. François leashed them and brought them on deck. At the first step upon the cold surface, Buck’s feet sank into a white mushy something very like mud. He sprang back with a snort. More of this white stuff was falling through the air. He shook himself, but more of it fell upon him. He sniffed it curiously, then licked some up on his tongue. It bit like fire, and the next instant was gone. This puzzled him. He tried it again, with the same result. The onlookers laughed uproariously, and he felt ashamed, he knew not why, for it was his first snow.</p>
+  </article>
+
+  <section class="ui" style="display: grid; gap: 0.75rem">
+    <p class="label">Hint panel sample · shape in #26, highlight form in #36</p>
+    <div class="hint">
+      <p class="word"><b>weazened</b> — зморщений, висохлий</p>
+      <p class="source">Buck saw money pass between them, and was not surprised when Curly, a good-natured Newfoundland, and he were led away by the little <mark>weazened</mark> man.</p>
+      <p class="target" lang="uk">Бак бачив, як гроші перейшли з рук у руки, і не здивувався, коли Керлі, добродушну ньюфаундлендку, і його повів геть маленький <mark>зморщений</mark> чоловічок.</p>
+      <div class="actions">
+        <button type="button" class="primary">Explain more</button>
+        <button type="button" class="secondary">Close</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav class="controls" aria-label="Specimen controls">
+  <div class="row five" role="group" aria-label="Text size">
+    <button type="button" id="size-16" data-size="16">16</button>
+    <button type="button" id="size-18" data-size="18">18</button>
+    <button type="button" id="size-20" data-size="20">20</button>
+    <button type="button" id="size-22" data-size="22">22</button>
+    <button type="button" id="size-24" data-size="24">24</button>
+  </div>
+  <div class="row three" role="group" aria-label="Theme">
+    <button type="button" id="theme-light" data-theme-choice="light">Light</button>
+    <button type="button" id="theme-dark" data-theme-choice="dark">Dark</button>
+    <button type="button" id="theme-system" data-theme-choice="system">System</button>
+  </div>
+</nav>
+
+<script>
+  const root = document.documentElement;
+
+  function setSize(size) {
+    if (size === '20') delete root.dataset.bookSize; else root.dataset.bookSize = size;
+    document.querySelectorAll('[data-size]').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.size === size)));
+  }
+
+  function setTheme(choice) {
+    if (choice === 'system') delete root.dataset.theme; else root.dataset.theme = choice;
+    document.querySelectorAll('[data-theme-choice]').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.themeChoice === choice)));
+  }
+
+  document.querySelectorAll('[data-size]').forEach(b => b.addEventListener('click', () => setSize(b.dataset.size)));
+  document.querySelectorAll('[data-theme-choice]').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.themeChoice)));
+  setSize('20');
+  setTheme('system');
+</script>
+</body>
+</html>
