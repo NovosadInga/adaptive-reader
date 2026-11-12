@@ -94,7 +94,9 @@ What kind of work it is:
 - `accessibility` — a barrier for people with disabilities
 
 `design` cuts across `frontend` rather than replacing it: a task can be both
-designed and built, and most reader tasks are.
+designed and built, and most reader tasks are. The one prefix outside the
+area split is `design/`: a change that only records a design decision in
+`design/` (D35). Wiring that decision into the app is `frontend/` (D24).
 
 ## Commands
 
@@ -122,7 +124,8 @@ Or read them in the browser, which is easier:
 ## Working rules
 
 No commits go straight to `main`. Each task gets its own short branch
-(`backend/…`, `frontend/…`, `docs/…`) and lands through a pull request (D21).
+(`backend/…`, `frontend/…`, `design/…`, `docs/…`) and lands through a pull
+request (D21).
 
 Pull request and commit titles start with the area they touch, and that prefix
 describes **the change, not the branch** — a commit sitting on a `backend/…`

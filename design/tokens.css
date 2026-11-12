@@ -1,0 +1,95 @@
+/*
+ * Design tokens for the reading surface: typefaces, sizes and the colour
+ * palette. Every value here was chosen on a phone; the reasons and the price
+ * are in D36 (docs/DECISIONS.md). The frontend (#18) imports this file as is.
+ *
+ * Only custom properties live here. Font files are loaded by the page that
+ * uses the tokens. Self-hosting them instead of Google Fonts is an open
+ * question for #18. The Google Fonts request the specimen uses is:
+ *   family=Literata:ital,opsz,wght@0,7..72,300..700;1,7..72,300..700
+ *   family=Source+Sans+3:wght@400..700
+ *
+ * Themes have three states, matching the setting the reader will offer:
+ * no data-theme attribute follows the system, data-theme="light" or "dark"
+ * is an explicit choice that wins over the system in both directions.
+ */
+
+:root {
+  /* Typefaces: a book face for the text, an interface face for everything
+     around it, so the book stays visually separate from the controls. */
+  --font-book: "Literata", Georgia, serif;
+  --font-ui: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Book text. 20px gave about 36 characters per line on a 402px phone,
+     the low end of the comfortable 35-45 range. */
+  --book-size: 20px;
+  --book-leading: 1.7;
+  --book-weight: 400;
+  --book-indent: 1.2em;
+  --page-gutter: 24px;
+
+  /* Interface text. */
+  --ui-size: 15px;
+  --ui-leading: 1.45;
+  --ui-size-small: 13px;
+  --hint-size: 17px;
+
+  /* Shapes. 44px is the minimum touch target for controls. */
+  --radius-control: 10px;
+  --radius-panel: 16px;
+  --tap-min: 44px;
+
+  /* Palette "Lamp", light. Contrast against --color-bg: text 13.63,
+     muted 6.19, accent 5.57; accent on --color-surface 4.96; text on
+     --color-highlight 10.93. Never set --color-muted text on
+     --color-highlight: 4.97 here, but 3.64 in dark, below WCAG AA. */
+  --color-bg: #f6f1e7;
+  --color-text: #2a241d;
+  --color-muted: #625849;
+  --color-rule: #ddd3c2;
+  --color-surface: #ece4d5;
+  --color-accent: #3b6a4c;
+  --color-on-accent: #ffffff;
+  --color-highlight: #e9d9a8;
+}
+
+/* Palette "Lamp", dark. Not an inversion: a brown-black ground instead of
+   pure black (halation on OLED), warm dimmed text, a lighter accent, and a
+   slightly lighter book weight because light text on dark looks bolder.
+   Contrast: text 12.18, muted 6.31, accent 8.98; accent on surface 8.08;
+   text on highlight 7.02. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #1d1915;
+    --color-text: #e2d6c3;
+    --color-muted: #a69a86;
+    --color-rule: #373029;
+    --color-surface: #28221c;
+    --color-accent: #9ac4a2;
+    --color-on-accent: #1d1915;
+    --color-highlight: #4e4027;
+    --book-weight: 370;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #1d1915;
+  --color-text: #e2d6c3;
+  --color-muted: #a69a86;
+  --color-rule: #373029;
+  --color-surface: #28221c;
+  --color-accent: #9ac4a2;
+  --color-on-accent: #1d1915;
+  --color-highlight: #4e4027;
+  --book-weight: 370;
+  color-scheme: dark;
+}
+
+/* Text size steps for the reader's setting (#40). 20px is the default;
+   line height and margins stay the same at every step. Only 18px and 20px
+   have been read on a phone so far. */
+:root[data-book-size="16"] { --book-size: 16px; }
+:root[data-book-size="18"] { --book-size: 18px; }
+:root[data-book-size="22"] { --book-size: 22px; }
+:root[data-book-size="24"] { --book-size: 24px; }
