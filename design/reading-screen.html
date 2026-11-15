@@ -333,7 +333,8 @@
   }
   .lang:focus-within { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
-  /* ---------- Progress ring: always there, bottom right ----------
+  /* ---------- Progress ring: bottom right, always there except while
+     the hint is open ----------
      Shows % of the chapter; a tap opens the "where am I" card above it.
      The cost: it covers the ends of the last two or three lines. */
   .ring {
@@ -358,7 +359,9 @@
     transition: opacity 0.2s ease;
   }
   .ring[aria-expanded="true"] { opacity: 1; }
-  .hint-open .ring { opacity: 0; pointer-events: none; }
+  /* visibility, not only opacity: a ring hidden by opacity alone could still
+     take keyboard and VoiceOver focus under the hint. */
+  .hint-open .ring { opacity: 0; visibility: hidden; pointer-events: none; }
   .ring svg { position: absolute; inset: 2px; width: 42px; height: 42px; transform: rotate(-90deg); }
   .ring .track { stroke: var(--color-rule); }
   .ring .prog { stroke: var(--color-accent); }
