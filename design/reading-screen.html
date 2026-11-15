@@ -11,6 +11,9 @@
   only demonstrates the behaviour: the frontend (#18) rebuilds it and keeps
   the behaviour, not the code. The text is Chapter I of "The Call of the
   Wild" (public domain, Project Gutenberg #215).
+  Network: the only outside requests are the two Google Fonts stylesheets
+  and their font files, so Google sees the IP and User-Agent of whoever
+  opens the page, as with specimen.html. Self-hosting is decided in #18.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -424,7 +427,7 @@
       <dt>Шапка</dt>
       <dd>Зліва ☰ (Зміст, Налаштування) і місце для логотипа, справа мова й значок користувача. Видна на першому екрані розділу й у кінці, виїжджає при прокрутці вгору.</dd>
       <dt>Кільце</dt>
-      <dd>Завжди праворуч унизу, показує % розділу. Дотик відкриває картку «де я»: книга й автор, розділ, % книги, час до кінця розділу.</dd>
+      <dd>Завжди праворуч унизу (ховається, лише коли відкрита підказка), показує % розділу. Дотик відкриває картку «де я»: книга й автор, розділ, % книги, час до кінця розділу.</dd>
       <dt>Ще не вирішено</dt>
       <dd>Логотипа немає — пунктирна заглушка. Вхід — лише місце на майбутнє: у MVP авторизації немає (D9).</dd>
     </dl>
