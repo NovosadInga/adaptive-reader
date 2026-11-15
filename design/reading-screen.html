@@ -616,10 +616,11 @@
     panel.inert = !on;
   }
   let lastY = 0;
+  // The chapter's first screen and its end, where D37 always shows the header.
+  const atChapterEdge = y => y < 40 || y + scroller.clientHeight >= scroller.scrollHeight - 24;
   scroller.addEventListener('scroll', () => {
     const y = scroller.scrollTop;
-    const nearEnd = y + scroller.clientHeight >= scroller.scrollHeight - 24;
-    if (y < 40 || nearEnd) setPanel(true);
+    if (atChapterEdge(y)) setPanel(true);
     else if (y < lastY - 6) setPanel(true);
     else if (y > lastY + 6) setPanel(false);
     lastY = y;
@@ -713,6 +714,9 @@
     frame.classList.remove('hint-open');
     if (state.sel) state.sel.classList.remove('sel');
     state.sel = null;
+    // The hint hid the header. Bring it back at the chapter's edges now,
+    // not only after the next scroll.
+    if (atChapterEdge(scroller.scrollTop)) setPanel(true);
   }
 
   let toastTimer = 0;
