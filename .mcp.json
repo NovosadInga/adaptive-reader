@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "node",
+      "args": [
+        "tools/node_modules/@playwright/mcp/cli.js",
+        "--browser",
+        "chrome",
+        "--device",
+        "iPhone 17 Pro",
+        "--headless",
+        "--isolated",
+        "--output-dir",
+        ".playwright-mcp"
+      ]
+    }
+  }
+}

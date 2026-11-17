@@ -1,0 +1,12 @@
+{
+  "name": "@reader/tools",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Development tools for Claude Code sessions, not part of the app. Playwright MCP lets the agent check screens in a real browser (#88).",
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@playwright/mcp": "0.0.85"
+  }
+}
