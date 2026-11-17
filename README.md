@@ -59,6 +59,12 @@ merged by the author. That shapes the process more than the stack does:
   it one chance to fix red code before finishing. They need `jq` on the
   machine; without it they report themselves skipped rather than failing
   silently.
+- Before the author sees a screen, the agent opens it in headless Chrome
+  through Playwright MCP (`.mcp.json`) at phone width and checks screenshots,
+  console errors and taps. Setup: Node 24+, `cd tools && npm ci`, local port
+  binding allowed in the Claude Code sandbox, and the folder trusted. Design
+  pages are served with `python3 -m http.server 8000 --bind 127.0.0.1 --directory design`.
+  The unsafe code tool is denied in `.claude/settings.json` (D38).
 - Secrets never enter the repository: API keys live in environment variables on
   the server, GitHub tokens in repository secrets, and both the local tooling
   and GitHub's push protection are configured to refuse them.

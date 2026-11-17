@@ -20,6 +20,9 @@ books/*
 # effort (D26), and the documentation refers to them.
 .claude/settings.local.json
 
+# Screenshots and other output of the Playwright MCP browser check (#88).
+.playwright-mcp/
+
 # Local /review-pr round history, one file per branch: what each round found
 # and what the author decided. It only serves the next round on this machine.
 .review-rounds/

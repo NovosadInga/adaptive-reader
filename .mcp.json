@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "node",
+      "args": [
+        "tools/node_modules/@playwright/mcp/cli.js",
+        "--browser",
+        "chrome",
+        "--device",
+        "iPhone 17 Pro",
+        "--headless",
+        "--isolated",
+        "--no-webmcp",
+        "--allowed-origins",
+        "http://127.0.0.1:8000;https://fonts.googleapis.com;https://fonts.gstatic.com",
+        "--output-dir",
+        ".playwright-mcp"
+      ]
+    }
+  }
+}
