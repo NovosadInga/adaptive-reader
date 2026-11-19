@@ -152,7 +152,6 @@
     inset: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    overflow-anchor: none; /* the script keeps the reading place itself */
     -webkit-tap-highlight-color: transparent;
   }
   .page-body {
@@ -1088,12 +1087,18 @@
       const r = el.getBoundingClientRect();
       if (r.bottom > top + 1) { anchor = el; ratio = (top - r.top) / r.height; break; }
     }
+    // The browser's own scroll anchoring would move the text a second time,
+    // so it is off only while the script restores the place. For every other
+    // reflow (a font swap, a rotation) the browser keeps the place itself,
+    // where it supports anchoring.
+    scroller.style.overflowAnchor = 'none';
     change();
     if (anchor) {
       const r = anchor.getBoundingClientRect();
       scroller.scrollTop += r.top + ratio * r.height - top;
       lastY = scroller.scrollTop;
     }
+    requestAnimationFrame(() => { scroller.style.overflowAnchor = ''; });
   }
   function setSize(s) {
     if (s === ui.size || !SIZES.includes(s)) return;
