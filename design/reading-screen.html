@@ -982,11 +982,11 @@
   // ================= Settings: one strip per setting, folded as an accordion (D39) =================
   const sizeLabel = s => s === DEFAULT_SIZE ? `${s} px · за замовчуванням` : `${s} px`;
   const SECTIONS = [
-    { id: 'size', title: 'Розмір тексту', tab: 'Розмір',
+    { id: 'size', title: 'Розмір тексту',
       controls: () => SIZES.map(s => `<button type="button" data-size="${s}" aria-label="${sizeLabel(s)}">${s}</button>`).join('') },
-    { id: 'theme', title: 'Тема', tab: 'Тема',
+    { id: 'theme', title: 'Тема',
       controls: () => THEMES.map(([v, l]) => `<button type="button" data-theme-set="${v}">${l}</button>`).join('') },
-    { id: 'level', title: 'Рівень англійської', tab: 'Рівень', note: LEVEL_NOTE,
+    { id: 'level', title: 'Рівень англійської', note: LEVEL_NOTE,
       controls: () => LEVELS.map(([c, n]) => `<button type="button" data-level="${c}" aria-label="${c}, ${n}">${c}</button>`).join('') },
   ];
   // The strip and its note. The group is named by the section title.
