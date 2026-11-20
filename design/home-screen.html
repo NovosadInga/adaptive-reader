@@ -1,0 +1,1588 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Home Screen</title>
+<!--
+  Home and All books as decided in D40 (#40), built only from tokens.css:
+  the shelf of demo books with the upload at the bottom, the All books page,
+  the mark of the open book, the question before replacing it, the upload
+  states, and a short reading screen with the one-time "tap any word" tip.
+  Open it on a phone. The description page and the inverted, dashed bar at
+  the top belong to the design review, not to the reader. The JavaScript
+  only demonstrates the behaviour: the frontend (#18) rebuilds it and keeps
+  the behaviour, not the code. Until Contents gets its place in the reading
+  header, the menu here (Home, All books, Settings) differs from the one in
+  reading-screen.html (D40).
+  Book texts (public domain): the whole Chapter I of "The Call of the Wild",
+  copied from reading-screen.html; the opening paragraphs of "Alice's
+  Adventures in Wonderland" and "Dracula", typed in, not copied from the
+  Gutenberg files: check before reuse.
+  Network: the only outside requests are the two Google Fonts stylesheets
+  and their font files, as in reading-screen.html.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,300..700;1,7..72,300..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400..700&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<style>
+
+  /* Local, derived only from tokens: every new control is at least 48px
+     tall (#40 asks for 48, the token says 44). The outer shell already
+     gives 16px at the sides, so inner gutters add the rest of 24px. */
+  :root { --tap-row: 48px; --inner: calc(var(--page-gutter) - 16px); }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--ui-size);
+    line-height: var(--ui-leading);
+    -webkit-text-size-adjust: 100%;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* The one outer container with the side insets. Everything else lives
+     inside it, so nothing reaches the screen edge or the notch. */
+  .shell {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: var(--color-bg);
+    overflow: hidden;
+  }
+
+  /* ---------- Design review harness: NOT part of the reader ---------- */
+  .desc { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .review-page {
+    max-width: 36rem;
+    margin-inline: auto;
+    padding: calc(24px + env(safe-area-inset-top, 0px)) 4px calc(32px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    gap: 16px;
+  }
+  .review-tag {
+    justify-self: start;
+    background: var(--color-text);
+    color: var(--color-bg);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin: 0;
+  }
+  .review-page h1 { font-size: 22px; line-height: 1.25; margin: 0; }
+  .review-page h2 { font-size: 17px; margin: 0; }
+  .review-page p { margin: 0; }
+  .review-page .muted { color: var(--color-muted); }
+  .card {
+    border: 1px dashed var(--color-muted);
+    border-radius: var(--radius-control);
+    padding: 14px 16px 16px;
+    display: grid;
+    gap: 8px;
+  }
+  .card dl { margin: 0; display: grid; gap: 6px; }
+  .card dt { font-weight: 700; font-size: var(--ui-size-small); text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-muted); }
+  .card dd { margin: 0; }
+  .card ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+  .review-btn {
+    min-height: var(--tap-row);
+    padding: 0 16px;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-text);
+    background: var(--color-text);
+    color: var(--color-bg);
+    font-weight: 600;
+    justify-self: start;
+  }
+  .review-seg-label { font-size: var(--ui-size-small); color: var(--color-muted); }
+  .review-seg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .review-seg button {
+    min-height: var(--tap-row);
+    padding: 0 14px;
+    border-radius: var(--radius-control);
+    border: 1px dashed var(--color-muted);
+    background: transparent;
+  }
+  .review-seg button[aria-pressed="true"] { border: 2px solid var(--color-text); font-weight: 700; }
+
+  .review-bar {
+    position: relative;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--color-text);
+    color: var(--color-bg);
+    padding: env(safe-area-inset-top, 0px) 2px 0;
+    border-bottom: 2px dashed var(--color-bg);
+    font-size: var(--ui-size-small);
+    z-index: 60;
+  }
+  .review-bar .tag { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700; padding-inline: 4px; opacity: 0.85; }
+  @media (max-width: 440px) { .review-bar .tag { display: none; } }
+  .review-bar .spacer { flex: 1; }
+  .review-bar button {
+    min-height: 44px;
+    padding: 0 6px;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .review-bar button.toggle { border: 1px dashed var(--color-bg); border-radius: 8px; min-height: 34px; margin-block: 5px; }
+  .review-bar :focus-visible { outline-color: var(--color-bg); outline-offset: 1px; }
+  .rev-pop {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    width: min(320px, 100%);
+    max-height: 70vh;
+    overflow-y: auto;
+    background: var(--color-text);
+    color: var(--color-bg);
+    border: 2px dashed var(--color-bg);
+    border-radius: var(--radius-control);
+    padding: 10px 12px 12px;
+    display: grid;
+    gap: 6px;
+  }
+  .rev-pop p { margin: 4px 0 0; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.85; }
+  .rev-pop .opts { display: flex; flex-wrap: wrap; gap: 4px; }
+  .review-bar .rev-pop button { min-height: 40px; border: 1px dashed var(--color-bg); border-radius: 8px; padding: 0 10px; font-weight: 500; }
+  .review-bar .rev-pop button[aria-pressed="true"] { border: 2px solid var(--color-bg); font-weight: 700; }
+
+  .toast {
+    position: absolute;
+    z-index: 80;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: max-content;
+    max-width: calc(100% - 32px);
+    background: var(--color-text);
+    color: var(--color-bg);
+    border: 2px dashed var(--color-bg);
+    border-radius: var(--radius-control);
+    padding: 10px 14px;
+    font-size: var(--ui-size-small);
+  }
+
+  /* ---------- The reader ---------- */
+  .app { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .frame { position: relative; flex: 1; min-height: 0; overflow: hidden; background: var(--color-bg); }
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--color-bg); }
+  .scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-tap-highlight-color: transparent; }
+  .col { max-width: 36rem; margin-inline: auto; padding: 16px var(--inner) 32px; display: grid; gap: 20px; }
+
+  /* Header: the same row as reading-screen.html. Here it is not hiding:
+     the choice screen is short, and on the reading screen the mock shows
+     only the first screen of a chapter, where the header is visible. */
+  .panel { flex: none; border-bottom: 1px solid var(--color-rule); padding: 4px 0; position: relative; z-index: 10; }
+  .header { max-width: 36rem; margin-inline: auto; display: flex; align-items: center; gap: 4px; }
+  .header .spacer { flex: 1; }
+  .icon-btn {
+    flex: none;
+    width: var(--tap-row);
+    height: var(--tap-row);
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--color-text);
+  }
+  .icon-btn svg { width: 22px; height: 22px; }
+  .icon-btn[aria-expanded="true"] { background: var(--color-surface); }
+  .logo-ph {
+    flex: none;
+    padding: 4px 10px;
+    border: 1px dashed var(--color-muted);
+    border-radius: 6px;
+    color: var(--color-muted);
+    font-size: var(--ui-size-small);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .mwrap { position: relative; flex: none; display: flex; }
+  .menu {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 6px);
+    min-width: 184px;
+    max-width: calc(100vw - 32px);
+    margin: 0;
+    padding: 4px;
+    display: grid;
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-control);
+  }
+  .menu.start { left: 0; }
+  .menu.end { right: 0; }
+  .menu-item {
+    width: 100%;
+    min-height: var(--tap-row);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px 0 14px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    text-align: left;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .menu-item + .menu-item { border-top: 1px solid var(--color-rule); }
+  .menu-item:hover { background: var(--color-bg); }
+  .menu-item .tick { margin-left: auto; width: 14px; height: 14px; flex: none; visibility: hidden; }
+  .menu-item[aria-checked="true"] { font-weight: 700; }
+  .menu-item[aria-checked="true"] .tick { visibility: visible; }
+  /* D40: the menu is the same on every screen; the page you are on is
+     marked as the chosen language is, bold with a tick. */
+  .menu-item[aria-current="page"] { font-weight: 700; }
+  .menu-item[aria-current="page"] .tick { visibility: visible; }
+  /* The logo leads home; the button keeps the 48px tap row. */
+  .logo-btn { flex: none; min-height: var(--tap-row); display: grid; place-items: center; padding: 0 4px; border: 0; border-radius: var(--radius-control); background: transparent; }
+  .menu.tip { width: max-content; min-width: 0; max-width: min(240px, calc(100vw - 32px)); padding: 12px 14px; }
+  .lang-btn {
+    flex: none;
+    min-width: 64px;
+    min-height: var(--tap-row);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 12px;
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-control);
+    background: var(--color-surface);
+    font-weight: 600;
+  }
+  .lang-btn .chev { width: 10px; height: 6px; flex: none; transition: transform 0.15s ease; }
+  .lang-btn[aria-expanded="true"] { border-color: var(--color-text); }
+  .lang-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+
+  /* Full-screen pages, as Contents and Settings (D39). */
+  .fs-top { flex: none; border-bottom: 1px solid var(--color-rule); padding: 4px 0; }
+  .fs-top-in { max-width: 36rem; margin-inline: auto; display: flex; align-items: center; gap: 4px; }
+  .fs-top h2 { margin: 0; font-size: var(--hint-size); font-weight: 700; line-height: 1.3; }
+  .fs-foot { flex: none; border-top: 1px solid var(--color-rule); padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); }
+  .fs-foot-in { max-width: 36rem; margin-inline: auto; display: grid; gap: 8px; }
+  [data-focus]:focus { outline: none; }
+  .btn-primary {
+    display: block;
+    width: 100%;
+    min-height: var(--tap-row);
+    border: 0;
+    border-radius: var(--radius-control);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-weight: 700;
+  }
+  .btn-secondary {
+    width: 100%;
+    min-height: var(--tap-row);
+    padding: 6px 16px;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-rule);
+    background: transparent;
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+
+  /* ---------- Choice screen ---------- */
+  .intro { display: grid; gap: 4px; padding-top: 8px; }
+  .intro h1 { margin: 0; font-size: 24px; line-height: 1.25; font-weight: 700; }
+  .intro p { margin: 0; color: var(--color-muted); }
+  .sec { display: grid; gap: 12px; }
+  .sec-head { display: grid; gap: 2px; }
+  /* The "All books" link sits on the title row, on the right. */
+  .sec-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .sec-title .more-link { margin-left: 0; margin-right: -4px; flex: none; }
+  .sec-head h2 { margin: 0; font-size: var(--hint-size); font-weight: 700; }
+  .sec-head p { margin: 0; font-size: var(--ui-size-small); color: var(--color-muted); }
+
+  /* Typographic covers: three looks from the palette, so a book keeps its
+     look on every screen. A real EPUB cover would go into the same frame
+     (object-fit: cover); without one, this is the fallback. */
+  .cover {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    aspect-ratio: 2 / 3;
+    width: 100%;
+    /* Narrow sides: on a 375px phone the title sits at its 11px floor, and
+       "Wonderland" needs about 70px. */
+    padding: 14% 9% 12% 12%;
+    border: 1px solid var(--color-rule);
+    border-radius: 3px 8px 8px 3px;
+    overflow: hidden;
+    container-type: inline-size;
+    text-align: left;
+  }
+  .cover::before {
+    content: "";
+    position: absolute;
+    inset: 6px 6px 6px 9px;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    opacity: 0.28;
+    pointer-events: none;
+  }
+  .cover::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: currentColor;
+    opacity: 0.18;
+  }
+  .cv-0 { background: var(--color-surface); color: var(--color-text); }
+  .cv-1 { background: var(--color-highlight); color: var(--color-text); }
+  .cv-2 { background: var(--color-text); color: var(--color-bg); border-color: var(--color-text); }
+  .cover .ct {
+    font-family: var(--font-book);
+    font-weight: 600;
+    /* Narrow covers (a window under 375px) hyphenate English titles
+       ("Won-derland") instead of breaking a word at any letter. */
+    font-size: max(11px, 13.5cqi);
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    line-height: 1.15;
+    text-wrap: balance;
+    overflow-wrap: break-word;
+  }
+  /* Below about 70px of title width (a window under 375px) the 11px floor
+     is too big for "Wonderland" or "Adventures" (about 6.4em): the title
+     scales with the cover instead. Hyphenation alone is not enough — not
+     every browser has the dictionaries. */
+  @container (max-width: 69.9px) { .cover .ct { font-size: 15cqi; } }
+  .cover .ca { font-size: max(9px, 8cqi); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+  .cover.sm { width: 56px; flex: none; padding: 0; display: grid; place-items: center; place-content: center; }
+  .cover.sm::before { inset: 4px 4px 4px 7px; }
+  .cover.sm .ci { font-family: var(--font-book); font-size: 26px; font-weight: 600; line-height: 1; }
+
+  /* Every book is one button: cover, title, author. */
+  .book-btn { border: 0; background: transparent; padding: 0; text-align: left; color: inherit; }
+
+  /* The shelf: three covers in a row (D40). */
+  .shelf { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .shelf .book-btn { width: 100%; display: grid; gap: 6px; align-content: start; padding: 4px; margin: -4px; border-radius: var(--radius-control); }
+  .s-title { font-weight: 700; line-height: 1.25; overflow-wrap: break-word; }
+  .s-author { font-size: var(--ui-size-small); color: var(--color-muted); margin-top: -4px; }
+
+  /* Rows: the All books page. */
+  .rows { list-style: none; margin: 0; padding: 0; }
+  .rows li + li { border-top: 1px solid var(--color-rule); }
+  .row {
+    position: relative;
+    width: 100%;
+    min-height: 72px;
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+    padding: 12px 4px;
+    border-radius: var(--radius-control);
+  }
+  .r-main { display: grid; gap: 1px; min-width: 0; }
+  .r-title { font-weight: 700; font-size: 16px; line-height: 1.3; }
+  .r-author { font-size: var(--ui-size-small); color: var(--color-muted); }
+  .r-about { font-size: 14px; margin-top: 4px; }
+
+
+  /* ---------- D40: the open book ----------
+     The open book sits in a thin green frame with the same rounding on every
+     corner (its own element, so it does not follow the cover's spine-shaped
+     corners), and the label "You are reading" is an outlined plate set into
+     the middle of the frame's top edge. The same plate marks the row on All
+     books. The read control turns the whole cover green with the words on
+     it ("green book"). With a mouse it appears on hover
+     or keyboard focus on every book ("Read on" on the open one, "Read" on the
+     others). A phone has no hover, and there it does not appear at all:
+     the frame and the plate are enough, and a tap reads on. */
+  .shelf { padding-top: 8px; }
+  .shelf .book-btn { position: relative; }
+  .cv-wrap { position: relative; display: block; }
+  .cur-frame {
+    position: absolute;
+    z-index: 3;
+    inset: -5px;
+    border: 2px solid var(--color-accent);
+    border-radius: calc(var(--radius-control) + 2px);
+    pointer-events: none;
+  }
+  .cur-lab {
+    position: absolute;
+    z-index: 4;
+    top: -10px;
+    left: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 9px 1px 7px;
+    border: 1.5px solid var(--color-accent);
+    border-radius: 999px;
+    background: var(--color-bg);
+    color: var(--color-accent);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    white-space: nowrap;
+  }
+  .cur-lab svg { width: 11px; height: 11px; flex: none; }
+  /* On a cover the plate sits centred on the frame's top line. */
+  .cv-wrap .cur-lab { top: -4px; left: 50%; transform: translate(-50%, -50%); }
+
+  .rb {
+    position: absolute;
+    z-index: 2;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    inset: 0;
+    background: color-mix(in srgb, var(--color-accent) 90%, transparent);
+    color: var(--color-on-accent);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  /* On a phone the open book shows only the frame and the
+     plate; a tap on it reads on. The green book is for a mouse (hover) and
+     for keyboard focus. */
+  .book-btn:focus-visible .rb { display: flex; }
+  @media (hover: hover) and (pointer: fine) {
+    .rb { display: flex; opacity: 0; transition: opacity 0.15s ease; }
+    .book-btn:hover .rb, .book-btn:focus-visible .rb { opacity: 1; }
+  }
+
+  /* All books: the whole row is highlighted, framed like the cover, with
+     the same plate on its top edge. */
+  .rows li.cur-li { margin-block: 14px 6px; }
+  .rows li.cur-li, .rows li.cur-li + li { border-top: 0; }
+  .row.is-cur { background: var(--color-surface); box-shadow: 0 0 0 2px var(--color-accent); padding-inline: 12px; }
+  .row.is-cur .cur-lab { left: 12px; }
+  .r-go { margin-top: 4px; font-size: var(--ui-size-small); font-weight: 700; color: var(--color-accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
+
+  .more-link {
+    justify-self: start;
+    min-height: var(--tap-row);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 4px;
+    margin-left: -4px;
+    border: 0;
+    background: transparent;
+    color: var(--color-accent);
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+  .more-link svg { width: 8px; height: 12px; }
+
+  /* Upload */
+  .upload { display: grid; gap: 6px; }
+  .btn-up {
+    width: 100%;
+    min-height: var(--tap-row);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-text);
+    background: transparent;
+    color: var(--color-text);
+    font-weight: 700;
+  }
+  .btn-up svg { width: 18px; height: 18px; flex: none; }
+  .up-note { margin: 0; text-align: center; font-size: var(--ui-size-small); color: var(--color-muted); }
+  .foot-up { flex: none; border-top: 1px solid var(--color-rule); padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); }
+  .foot-up .upload { max-width: 36rem; margin-inline: auto; }
+
+  /* Status of an upload: errors get a thick border and an icon, not a
+     colour — the palette has no error colour, and does not need one. */
+  .status {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-rule);
+    background: var(--color-surface);
+  }
+  .status p { margin: 0; }
+  .status.err { border: 2px solid var(--color-text); }
+  .status > svg { width: 20px; height: 20px; margin-top: 1px; }
+  .st-title { font-weight: 700; }
+  .st-file { font-size: var(--ui-size-small); color: var(--color-muted); overflow-wrap: anywhere; }
+  .status.busy { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .status.busy .bar-track { grid-column: 1 / -1; }
+  .link-btn {
+    min-height: var(--tap-row);
+    padding: 0 10px;
+    margin: -8px -8px -8px 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-accent);
+    font-weight: 700;
+  }
+  .bar-track { position: relative; height: 3px; background: var(--color-rule); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+  .bar-run { position: absolute; top: 0; bottom: 0; width: 35%; background: var(--color-accent); border-radius: 2px; animation: run 1.3s ease-in-out infinite; }
+  @keyframes run { from { left: -35%; } to { left: 100%; } }
+
+  /* The book was lost on the server (D32) */
+  .notice {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-rule);
+    border-left: 4px solid var(--color-text);
+    border-radius: var(--radius-control);
+    background: var(--color-surface);
+  }
+  .notice p { margin: 0; }
+  .notice > svg { width: 20px; height: 20px; margin-top: 1px; }
+
+  /* Confirmation before replacing the open book (D11) */
+  /* D40: a small, quiet question, not a big panel. */
+  .scrim { position: absolute; inset: 0; z-index: 45; background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+  .sheet {
+    position: absolute;
+    z-index: 50;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: 36rem;
+    margin-inline: auto;
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-bottom: 0;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+    padding: 16px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    gap: 8px;
+  }
+  .sheet p { margin: 0; }
+  .sheet h2 { margin: 0; font-size: var(--hint-size); line-height: 1.3; }
+  .sheet .btns { display: grid; gap: 8px; margin-top: 8px; }
+  /* D40: the question before replacing the book is a small
+     card, two short lines and two buttons, near the bottom on a phone and in
+     the middle on a wide screen. */
+  .sheet.small {
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: min(22rem, 100%);
+    border-bottom: 1px solid var(--color-rule);
+    border-radius: var(--radius-panel);
+    padding: 14px 16px 12px;
+    gap: 4px;
+    box-shadow: 0 8px 28px color-mix(in srgb, var(--color-text) 16%, transparent);
+  }
+  .sheet.small .cf-note { font-size: var(--ui-size-small); color: var(--color-muted); }
+  .sheet.small .btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+  .sheet.small .btns button { width: auto; padding: 0 18px; }
+  @media (min-width: 700px) { .sheet.small { top: 50%; bottom: auto; transform: translateY(-50%); } }
+
+  /* ---------- Minimal reading screen ---------- */
+  .page-body { max-width: 36rem; margin-inline: auto; padding: 32px var(--inner) 160px; }
+  .book { font-family: var(--font-book); font-size: var(--book-size); line-height: var(--book-leading); font-weight: var(--book-weight); font-optical-sizing: auto; }
+  .book h1 { font-family: var(--font-ui); font-weight: 600; font-size: 1.25rem; line-height: 1.3; text-wrap: balance; margin: 0 0 1.2em; }
+  .book p { margin: 0; }
+  .book p + p { text-indent: var(--book-indent); }
+  .w { border-radius: 3px; padding-block: 0.2em; cursor: pointer; }
+  .sel {
+    background: var(--color-highlight);
+    color: var(--color-text);
+    text-decoration-line: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  /* The one-time tip. Bottom: where the hint panel opens, so the tip shows
+     where help will appear. Inline: under the chapter title. */
+  .first-tip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-panel);
+    font-family: var(--font-ui);
+    font-size: var(--ui-size);
+    font-weight: 500;
+    line-height: var(--ui-leading);
+    text-indent: 0;
+    transition: opacity 0.3s ease;
+  }
+  .first-tip svg { width: 26px; height: 26px; flex: none; }
+  /* The one-time tip, pinned to the very bottom in the shape of the hint
+     panel that opens in the same place (D40). */
+  .first-tip.bottom {
+    position: absolute;
+    z-index: 15;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: 36rem;
+    margin-inline: auto;
+    border-bottom: 0;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  .first-tip.gone { opacity: 0; pointer-events: none; }
+
+  .hint {
+    position: absolute;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: 36rem;
+    margin-inline: auto;
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-bottom: 0;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    gap: 8px;
+    transform: translateY(105%);
+    visibility: hidden;
+    transition: transform 0.22s ease, visibility 0s linear 0.22s;
+  }
+  .hint.open { transform: none; visibility: visible; transition: transform 0.22s ease, visibility 0s; }
+  .hint p { margin: 0; }
+  .hint .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .hint .word { font-family: var(--font-book); font-size: 19px; padding-inline: 2px; }
+  .hint .placeholder { color: var(--color-muted); border: 1px dashed var(--color-rule); border-radius: var(--radius-control); padding: 10px 12px; text-align: center; }
+  .close-x {
+    flex: none;
+    width: var(--tap-row);
+    height: var(--tap-row);
+    margin: -10px -10px -10px 0;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--color-muted);
+  }
+  .close-x svg { width: 14px; height: 14px; }
+
+  /* The progress ring, the "where am I" card and the chapter end,
+     as in reading-screen.html (D37, D39). The shell already keeps 16px at
+     the sides, so right: 0 here is 16px from the screen edge, as there. */
+  .chapter-end { margin-top: 2.5em; padding-top: 1.25em; border-top: 1px solid var(--color-rule); display: grid; justify-items: center; gap: 10px; text-align: center; }
+  .chapter-end p { margin: 0; color: var(--color-muted); }
+  .chapter-end .btn-secondary { width: auto; }
+  .ring {
+    position: absolute;
+    z-index: 5;
+    right: 0;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid var(--color-rule);
+    background: var(--color-surface);
+    color: var(--color-text);
+    display: grid;
+    place-items: center;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    opacity: 0.82;
+    transition: opacity 0.2s ease;
+  }
+  .ring[aria-expanded="true"] { opacity: 1; }
+  /* Hidden while the hint is open (D37) and while the one-time tip sits in
+     the hint's place. */
+  #s-reader.hint-open .ring, #s-reader.tip-on .ring { opacity: 0; visibility: hidden; pointer-events: none; }
+  .ring svg { position: absolute; inset: 2px; width: 42px; height: 42px; transform: rotate(-90deg); }
+  .ring .track { stroke: var(--color-rule); }
+  .ring .prog { stroke: var(--color-accent); }
+  .where {
+    position: absolute;
+    z-index: 9;
+    right: 0;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px) + 46px + 8px);
+    width: min(300px, 100%);
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-panel);
+    padding: 12px 14px;
+    display: grid;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .where p { margin: 0; }
+  .where-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .where .small { font-size: var(--ui-size-small); color: var(--color-muted); }
+  .where .chapter { font-weight: 600; }
+  .w-track { height: 3px; background: var(--color-rule); border-radius: 2px; overflow: hidden; margin-block: 4px 2px; }
+  .w-fill { height: 100%; width: 0; background: var(--color-accent); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
+    .bar-run { animation: none; left: 0; width: 100%; opacity: 0.5; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell" lang="uk">
+
+<!-- ================= Design review: description ================= -->
+<div class="desc" id="desc">
+<main class="review-page">
+  <p class="review-tag">Огляд дизайну · #40 · D40 · не частина читалки</p>
+  <h1>Головна й «Усі книги»</h1>
+
+  <section class="card" aria-labelledby="what-h">
+    <h2 id="what-h">Що це</h2>
+    <p>Головна — екран, звідки починається книга: при першому візиті, з логотипа й через ☰ → «Головна». Хто вже читав, при відкритті потрапляє одразу на своє місце (R6). Рішення, ціна й відкинуті варіанти — у D40.</p>
+    <dl>
+      <dt>Головна</dt>
+      <dd>«Що почитаємо?», три демо-книги полицею, «Завантажити свою книгу» внизу, у зоні великого пальця. Лінк «Усі книги · N» — лише коли книг більше трьох.</dd>
+      <dt>Меню ☰</dt>
+      <dd>На кожному екрані те саме: Головна / Усі книги / Налаштування; сторінка, на якій ви є, — з галочкою. «Зміст» чекає на своє місце в шапці екрана читання.</dd>
+      <dt>Відкрита книга</dt>
+      <dd>Зелена рамка й обведена плашка «Ви читаєте». З мишею наведення на будь-яку книгу зафарбовує її зеленим із «Читати далі» або «Читати»; на телефоні цього немає — дотик до книги відкриває її. На «Усіх книгах» рядок відкритої книги виділений повністю.</dd>
+      <dt>Заміна книги</dt>
+      <dd>Маленька картка: «Зараз ви читаєте «…». Перейти на «…»?» — «Скасувати» / «Перейти».</dd>
+      <dt>Демо-книги</dt>
+      <dd>MVP — 3 книги (D10). Перемикач «3 / 8» показує екран, коли книг більше трьох. <strong>Перелік книг ілюстративний</strong>, не вибір.</dd>
+      <dt>Мова</dt>
+      <dd>Береться з браузера (uk / ru / en, інакше English), перемикач у шапці є завжди. Ваш браузер дає: <strong id="lang-detected"></strong>. Тексти макета поки лише українською (#89).</dd>
+      <dt>Перша книга</dt>
+      <dd>Одноразова плашка «Торкніться будь-якого слова…» внизу, на місці панелі підказки; кільце під нею сховане. Зникає після першого дотику до слова. У макеті з'являється знову при кожному відкритті сторінки.</dd>
+    </dl>
+  </section>
+
+  <section class="card" aria-labelledby="try-h">
+    <h2 id="try-h">Спробуйте</h2>
+    <ul>
+      <li>Торкніться книги — відкриється початок розділу з плашкою. Торкніться слова — плашка зникне, відкриється панель підказки.</li>
+      <li>«Ще» → «Книга відкрита + інша книга» — одразу Головна з відкритою книгою й питанням перед заміною.</li>
+      <li>На комп'ютері наведіть мишу на кожну книгу — «Читати далі» на відкритій, «Читати» на інших.</li>
+      <li>У книзі: ☰ → «Усі книги» — список із виділеним рядком. Торкніться <strong>іншої</strong> книги — з'явиться питання, чи замінити поточну. «←» повертає на те саме місце в книзі.</li>
+      <li>У книзі: ☰ → «Головна» або дотик до логотипа — Головна з позначеною книгою.</li>
+      <li>Прокрутіть розділ: кільце внизу праворуч рахує %, дотик до нього — картка «де я». У кінці розділу — «Далі». Повний текст розділу є лише в The Call of the Wild.</li>
+      <li>«Завантажити свою»: оберіть будь-який файл. Не EPUB або більше 20 МБ — помилка одразу, без відправки; EPUB — «Відкриваю книгу…», потім читання.</li>
+      <li>«Ще» → «Стан»: усі стани завантаження й «книгу не знайдено» без справжнього файлу.</li>
+    </ul>
+  </section>
+
+  <section class="card" aria-labelledby="open-h">
+    <h2 id="open-h">Свідомо не вирішено</h2>
+    <ul>
+      <li>Де живуть «перший візит», «плашку вже бачив» і місце в книзі — стан читача (D9, #18). Макет нічого не зберігає.</li>
+      <li>Чи зберігається місце в книзі, яку замінили, і чи повертає повторне завантаження того самого файлу на те саме місце (id той самий за D32). Тексти макета цього не обіцяють.</li>
+      <li>Справжні обкладинки EPUB: макет показує лише типографські; картинка ляже в ту саму рамку.</li>
+      <li>«Зміст» — його місце в шапці екрана читання ще не придумане (#40). Доти меню тут і в reading-screen.html різні.</li>
+      <li>Налаштування тут — заглушка: сторінка — у reading-screen.html (D39). На Головній без книги зразок тексту — початок The Call of the Wild (D40).</li>
+      <li>Логотип — пунктирна заглушка (#98). Позначка «прочитано» на книгах — після MVP (#100).</li>
+      <li>Шапка читання тут не ховається: повний екран читання — у reading-screen.html.</li>
+    </ul>
+  </section>
+
+  <p class="review-seg-label" id="n-l">Демо-книг</p>
+  <div class="review-seg" role="group" aria-labelledby="n-l">
+    <button type="button" data-set-count="3">3 (MVP)</button>
+    <button type="button" data-set-count="8">8 — з лінком</button>
+  </div>
+  <p class="review-seg-label" id="m-l">Книга</p>
+  <div class="review-seg" role="group" aria-labelledby="m-l">
+    <button type="button" data-set-mode="first">Ще немає (перше відкриття)</button>
+    <button type="button" data-set-mode="switch">Відкрита</button>
+  </div>
+  <p class="review-seg-label" id="t-l">Тема</p>
+  <div class="review-seg" role="group" aria-labelledby="t-l">
+    <button type="button" data-set-theme="light">Світла</button>
+    <button type="button" data-set-theme="dark">Темна</button>
+  </div>
+  <div class="review-seg">
+    <button type="button" data-demo-confirm="book">Відкрити макет: книга відкрита + підтвердження</button>
+  </div>
+  <div class="review-seg">
+    <button type="button" data-act="tip-reset">Показати підказку знову</button>
+  </div>
+  <button type="button" class="review-btn" id="open-mock">Відкрити макет</button>
+  <p class="muted">Інвертована смуга вгорі макета — панель огляду; у читалці її не буде. «Ще» на ній — стани завантаження, підтвердження заміни, книга відкрита чи ні, і плашка-підказка.</p>
+</main>
+</div>
+
+<!-- ================= The reader mock ================= -->
+<div class="app" id="app" hidden>
+  <div class="review-bar" role="toolbar" aria-label="Панель огляду дизайну (не частина читалки)">
+    <button type="button" id="back-desc">← опис</button>
+    <span class="tag" aria-hidden="true">огляд</span>
+    <span class="spacer"></span>
+    <button type="button" class="toggle" id="bar-count"></button>
+    <button type="button" class="toggle" id="bar-theme"></button>
+    <button type="button" class="toggle" id="bar-more" aria-expanded="false" aria-controls="rev-pop">Ще ▾</button>
+    <div class="rev-pop" id="rev-pop" hidden>
+      <p id="rp-s">Стан</p>
+      <div class="opts" role="group" aria-labelledby="rp-s">
+        <button type="button" data-force="none">Звичайний</button>
+        <button type="button" data-force="parsing">Розбір файлу</button>
+        <button type="button" data-force="not-epub">Не EPUB</button>
+        <button type="button" data-force="too-large">&gt; 20 МБ</button>
+        <button type="button" data-force="corrupt">Зіпсований</button>
+        <button type="button" data-force="no-text">Без тексту</button>
+        <button type="button" data-force="lost">Книгу не знайдено</button>
+      </div>
+      <p id="rp-c">Підтвердження заміни</p>
+      <div class="opts" role="group" aria-labelledby="rp-c">
+        <button type="button" data-demo-confirm="book">Книга відкрита + інша книга</button>
+        <button type="button" data-demo-confirm="file">Книга відкрита + свій файл</button>
+      </div>
+      <p id="rp-m">Книга</p>
+      <div class="opts" role="group" aria-labelledby="rp-m">
+        <button type="button" data-set-mode="first">Ще немає</button>
+        <button type="button" data-set-mode="switch">Відкрита</button>
+      </div>
+      <p id="rp-t">Плашка підказки</p>
+      <div class="opts" role="group" aria-labelledby="rp-t">
+        <button type="button" data-act="tip-reset">Показати знову</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="frame">
+    <!-- Choice screen: first visit (header) or ☰ → Another book (full page) -->
+    <section class="screen" id="s-choose" aria-label="Вибір книги">
+      <div id="ch-top"></div>
+      <div class="scroll" id="ch-scroll"><div class="col" id="ch-body"></div></div>
+      <div id="ch-foot"></div>
+    </section>
+
+    <!-- All demo books -->
+    <section class="screen" id="s-all" role="dialog" aria-modal="true" aria-labelledby="all-h" hidden>
+      <div class="fs-top"><div class="fs-top-in">
+        <button type="button" class="icon-btn" data-act="back-all" aria-label="Назад"></button>
+        <h2 id="all-h" tabindex="-1" data-focus>Усі книги</h2>
+      </div></div>
+      <div class="scroll"><div class="col" id="all-body"></div></div>
+    </section>
+
+    <!-- Minimal reading screen -->
+    <section class="screen" id="s-reader" aria-label="Читання" hidden>
+      <div id="rd-top"></div>
+      <div class="scroll" id="rd-scroll">
+        <div class="page-body"><article class="book" id="book" lang="en"></article><div class="chapter-end" id="ch-end"></div></div>
+      </div>
+      <div class="first-tip bottom" id="tip-bottom" role="note" hidden></div>
+      <button type="button" class="ring" id="ring" data-act="ring" aria-expanded="false" aria-controls="where">
+        <svg viewBox="0 0 42 42" aria-hidden="true">
+          <circle class="track" cx="21" cy="21" r="18.5" fill="none" stroke-width="3"/>
+          <circle class="prog" id="ring-prog" cx="21" cy="21" r="18.5" fill="none" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <span id="ring-pct" aria-hidden="true"></span>
+      </button>
+      <section class="where" id="where" role="dialog" aria-label="Де я в книзі" hidden>
+        <div class="where-row">
+          <p class="small" lang="en" id="w-title"></p>
+          <button type="button" class="close-x" data-act="close-where" aria-label="Закрити"></button>
+        </div>
+        <p class="chapter" id="w-ch"></p>
+        <div class="w-track" aria-hidden="true"><div class="w-fill" id="w-bar"></div></div>
+        <p class="small" id="w-book"></p>
+      </section>
+      <section class="hint" id="hint" aria-label="Підказка">
+        <div class="head">
+          <p class="word sel" id="hint-word" lang="en"></p>
+          <button type="button" class="close-x" data-act="close-hint" aria-label="Закрити"></button>
+        </div>
+        <p class="placeholder" aria-live="polite">Тут буде підказка (#26)</p>
+      </section>
+    </section>
+
+    <div class="scrim" id="scrim" hidden></div>
+    <section class="sheet" id="confirm" role="alertdialog" aria-modal="true" aria-labelledby="cf-h" aria-describedby="cf-t" hidden></section>
+
+    <input type="file" id="file-in" class="vh" accept=".epub" tabindex="-1" aria-hidden="true">
+    <div class="toast" id="toast" role="status" hidden></div>
+  </div>
+</div>
+</div>
+
+<script>
+(() => {
+  // ---------- Data (illustrative; the list is not a choice of books) ----------
+  const BOOKS = [
+    { id: 'cotw', title: 'The Call of the Wild', author: 'Jack London', initial: 'C', about: 'Домашнього пса Бака викрадають і везуть на Аляску часів золотої лихоманки.' },
+    { id: 'alice', title: 'Alice’s Adventures in Wonderland', author: 'Lewis Carroll', initial: 'A', about: 'Дівчинка біжить за Білим Кроликом і падає в країну, де логіка не діє.' },
+    { id: 'dracula', title: 'Dracula', author: 'Bram Stoker', initial: 'D', about: 'Молодий юрист їде до Трансильванії укласти угоду з дивним графом.' },
+    { id: 'pride', title: 'Pride and Prejudice', author: 'Jane Austen', initial: 'P', about: 'Елізабет Беннет і містер Дарсі: гордість, упередження й п’ять сестер.' },
+    { id: 'frank', title: 'Frankenstein', author: 'Mary Shelley', initial: 'F', about: 'Учений створює живу істоту — і тікає від неї.' },
+    { id: 'treasure', title: 'Treasure Island', author: 'Robert Louis Stevenson', initial: 'T', about: 'Хлопець знаходить карту скарбів і пливе по них разом із піратом.' },
+    { id: 'sawyer', title: 'The Adventures of Tom Sawyer', author: 'Mark Twain', initial: 'T', about: 'Літо хлопчика з містечка на Міссісіпі: пригоди, скарб і перше кохання.' },
+    { id: 'dorian', title: 'The Picture of Dorian Gray', author: 'Oscar Wilde', initial: 'D', about: 'Портрет старіє замість свого власника.' },
+  ];
+  const TEXTS = {
+    cotw: { chapter: 'Chapter I. Into the Primitive', name: 'Into the Primitive', total: 7, next: 'Chapter II. The Law of Club and Fang', paras: [
+      "“Old longings nomadic leap, Chafing at custom’s chain; Again from its brumal sleep Wakens the ferine strain.”",
+      "Buck did not read the newspapers, or he would have known that trouble was brewing, not alone for himself, but for every tide-water dog, strong of muscle and with warm, long hair, from Puget Sound to San Diego. Because men, groping in the Arctic darkness, had found a yellow metal, and because steamship and transportation companies were booming the find, thousands of men were rushing into the Northland. These men wanted dogs, and the dogs they wanted were heavy dogs, with strong muscles by which to toil, and furry coats to protect them from the frost.",
+      "Buck lived at a big house in the sun-kissed Santa Clara Valley. Judge Miller’s place, it was called. It stood back from the road, half hidden among the trees, through which glimpses could be caught of the wide cool veranda that ran around its four sides. The house was approached by gravelled driveways which wound about through wide-spreading lawns and under the interlacing boughs of tall poplars. At the rear things were on even a more spacious scale than at the front. There were great stables, where a dozen grooms and boys held forth, rows of vine-clad servants’ cottages, an endless and orderly array of outhouses, long grape arbors, green pastures, orchards, and berry patches. Then there was the pumping plant for the artesian well, and the big cement tank where Judge Miller’s boys took their morning plunge and kept cool in the hot afternoon.",
+      "And over this great demesne Buck ruled. Here he was born, and here he had lived the four years of his life. It was true, there were other dogs. There could not but be other dogs on so vast a place, but they did not count. They came and went, resided in the populous kennels, or lived obscurely in the recesses of the house after the fashion of Toots, the Japanese pug, or Ysabel, the Mexican hairless,—strange creatures that rarely put nose out of doors or set foot to ground. On the other hand, there were the fox terriers, a score of them at least, who yelped fearful promises at Toots and Ysabel looking out of the windows at them and protected by a legion of housemaids armed with brooms and mops.",
+      "But Buck was neither house-dog nor kennel-dog. The whole realm was his. He plunged into the swimming tank or went hunting with the Judge’s sons; he escorted Mollie and Alice, the Judge’s daughters, on long twilight or early morning rambles; on wintry nights he lay at the Judge’s feet before the roaring library fire; he carried the Judge’s grandsons on his back, or rolled them in the grass, and guarded their footsteps through wild adventures down to the fountain in the stable yard, and even beyond, where the paddocks were, and the berry patches. Among the terriers he stalked imperiously, and Toots and Ysabel he utterly ignored, for he was king,—king over all creeping, crawling, flying things of Judge Miller’s place, humans included.",
+      "His father, Elmo, a huge St. Bernard, had been the Judge’s inseparable companion, and Buck bid fair to follow in the way of his father. He was not so large,—he weighed only one hundred and forty pounds,—for his mother, Shep, had been a Scotch shepherd dog. Nevertheless, one hundred and forty pounds, to which was added the dignity that comes of good living and universal respect, enabled him to carry himself in right royal fashion. During the four years since his puppyhood he had lived the life of a sated aristocrat; he had a fine pride in himself, was even a trifle egotistical, as country gentlemen sometimes become because of their insular situation. But he had saved himself by not becoming a mere pampered house-dog. Hunting and kindred outdoor delights had kept down the fat and hardened his muscles; and to him, as to the cold-tubbing races, the love of water had been a tonic and a health preserver.",
+      "And this was the manner of dog Buck was in the fall of 1897, when the Klondike strike dragged men from all the world into the frozen North. But Buck did not read the newspapers, and he did not know that Manuel, one of the gardener’s helpers, was an undesirable acquaintance. Manuel had one besetting sin. He loved to play Chinese lottery. Also, in his gambling, he had one besetting weakness—faith in a system; and this made his damnation certain. For to play a system requires money, while the wages of a gardener’s helper do not lap over the needs of a wife and numerous progeny.",
+      "The Judge was at a meeting of the Raisin Growers’ Association, and the boys were busy organizing an athletic club, on the memorable night of Manuel’s treachery. No one saw him and Buck go off through the orchard on what Buck imagined was merely a stroll. And with the exception of a solitary man, no one saw them arrive at the little flag station known as College Park. This man talked with Manuel, and money chinked between them.",
+      "“You might wrap up the goods before you deliver ’m,” the stranger said gruffly, and Manuel doubled a piece of stout rope around Buck’s neck under the collar.",
+      "“Twist it, an’ you’ll choke ’m plentee,” said Manuel, and the stranger grunted a ready affirmative.",
+      "Buck had accepted the rope with quiet dignity. To be sure, it was an unwonted performance: but he had learned to trust in men he knew, and to give them credit for a wisdom that outreached his own. But when the ends of the rope were placed in the stranger’s hands, he growled menacingly. He had merely intimated his displeasure, in his pride believing that to intimate was to command. But to his surprise the rope tightened around his neck, shutting off his breath. In quick rage he sprang at the man, who met him halfway, grappled him close by the throat, and with a deft twist threw him over on his back. Then the rope tightened mercilessly, while Buck struggled in a fury, his tongue lolling out of his mouth and his great chest panting futilely. Never in all his life had he been so vilely treated, and never in all his life had he been so angry. But his strength ebbed, his eyes glazed, and he knew nothing when the train was flagged and the two men threw him into the baggage car.",
+      "The next he knew, he was dimly aware that his tongue was hurting and that he was being jolted along in some kind of a conveyance. The hoarse shriek of a locomotive whistling a crossing told him where he was. He had travelled too often with the Judge not to know the sensation of riding in a baggage car. He opened his eyes, and into them came the unbridled anger of a kidnapped king. The man sprang for his throat, but Buck was too quick for him. His jaws closed on the hand, nor did they relax till his senses were choked out of him once more.",
+      "“Yep, has fits,” the man said, hiding his mangled hand from the baggageman, who had been attracted by the sounds of struggle. “I’m takin’ ’m up for the boss to ’Frisco. A crack dog-doctor there thinks that he can cure ’m.”",
+      "Concerning that night’s ride, the man spoke most eloquently for himself, in a little shed back of a saloon on the San Francisco water front.",
+      "“All I get is fifty for it,” he grumbled; “an’ I wouldn’t do it over for a thousand, cold cash.”",
+      "His hand was wrapped in a bloody handkerchief, and the right trouser leg was ripped from knee to ankle.",
+      "“How much did the other mug get?” the saloon-keeper demanded.",
+      "“A hundred,” was the reply. “Wouldn’t take a sou less, so help me.”",
+      "“That makes a hundred and fifty,” the saloon-keeper calculated; “and he’s worth it, or I’m a squarehead.”",
+      "The kidnapper undid the bloody wrappings and looked at his lacerated hand. “If I don’t get the hydrophoby—”",
+      "“It’ll be because you was born to hang,” laughed the saloon-keeper. “Here, lend me a hand before you pull your freight,” he added.",
+      "Dazed, suffering intolerable pain from throat and tongue, with the life half throttled out of him, Buck attempted to face his tormentors. But he was thrown down and choked repeatedly, till they succeeded in filing the heavy brass collar from off his neck. Then the rope was removed, and he was flung into a cagelike crate.",
+      "There he lay for the remainder of the weary night, nursing his wrath and wounded pride. He could not understand what it all meant. What did they want with him, these strange men? Why were they keeping him pent up in this narrow crate? He did not know why, but he felt oppressed by the vague sense of impending calamity. Several times during the night he sprang to his feet when the shed door rattled open, expecting to see the Judge, or the boys at least. But each time it was the bulging face of the saloon-keeper that peered in at him by the sickly light of a tallow candle. And each time the joyful bark that trembled in Buck’s throat was twisted into a savage growl.",
+      "But the saloon-keeper let him alone, and in the morning four men entered and picked up the crate. More tormentors, Buck decided, for they were evil-looking creatures, ragged and unkempt; and he stormed and raged at them through the bars. They only laughed and poked sticks at him, which he promptly assailed with his teeth till he realized that that was what they wanted. Whereupon he lay down sullenly and allowed the crate to be lifted into a wagon. Then he, and the crate in which he was imprisoned, began a passage through many hands. Clerks in the express office took charge of him; he was carted about in another wagon; a truck carried him, with an assortment of boxes and parcels, upon a ferry steamer; he was trucked off the steamer into a great railway depot, and finally he was deposited in an express car.",
+      "For two days and nights this express car was dragged along at the tail of shrieking locomotives; and for two days and nights Buck neither ate nor drank. In his anger he had met the first advances of the express messengers with growls, and they had retaliated by teasing him. When he flung himself against the bars, quivering and frothing, they laughed at him and taunted him. They growled and barked like detestable dogs, mewed, and flapped their arms and crowed. It was all very silly, he knew; but therefore the more outrage to his dignity, and his anger waxed and waxed. He did not mind the hunger so much, but the lack of water caused him severe suffering and fanned his wrath to fever-pitch. For that matter, high-strung and finely sensitive, the ill treatment had flung him into a fever, which was fed by the inflammation of his parched and swollen throat and tongue.",
+      "He was glad for one thing: the rope was off his neck. That had given them an unfair advantage; but now that it was off, he would show them. They would never get another rope around his neck. Upon that he was resolved. For two days and nights he neither ate nor drank, and during those two days and nights of torment, he accumulated a fund of wrath that boded ill for whoever first fell foul of him. His eyes turned blood-shot, and he was metamorphosed into a raging fiend. So changed was he that the Judge himself would not have recognized him; and the express messengers breathed with relief when they bundled him off the train at Seattle.",
+      "Four men gingerly carried the crate from the wagon into a small, high-walled back yard. A stout man, with a red sweater that sagged generously at the neck, came out and signed the book for the driver. That was the man, Buck divined, the next tormentor, and he hurled himself savagely against the bars. The man smiled grimly, and brought a hatchet and a club.",
+      "“You ain’t going to take him out now?” the driver asked.",
+      "“Sure,” the man replied, driving the hatchet into the crate for a pry.",
+      "There was an instantaneous scattering of the four men who had carried it in, and from safe perches on top the wall they prepared to watch the performance.",
+      "Buck rushed at the splintering wood, sinking his teeth into it, surging and wrestling with it. Wherever the hatchet fell on the outside, he was there on the inside, snarling and growling, as furiously anxious to get out as the man in the red sweater was calmly intent on getting him out.",
+      "“Now, you red-eyed devil,” he said, when he had made an opening sufficient for the passage of Buck’s body. At the same time he dropped the hatchet and shifted the club to his right hand.",
+      "And Buck was truly a red-eyed devil, as he drew himself together for the spring, hair bristling, mouth foaming, a mad glitter in his blood-shot eyes. Straight at the man he launched his one hundred and forty pounds of fury, surcharged with the pent passion of two days and nights. In mid air, just as his jaws were about to close on the man, he received a shock that checked his body and brought his teeth together with an agonizing clip. He whirled over, fetching the ground on his back and side. He had never been struck by a club in his life, and did not understand. With a snarl that was part bark and more scream he was again on his feet and launched into the air. And again the shock came and he was brought crushingly to the ground. This time he was aware that it was the club, but his madness knew no caution. A dozen times he charged, and as often the club broke the charge and smashed him down.",
+      "After a particularly fierce blow, he crawled to his feet, too dazed to rush. He staggered limply about, the blood flowing from nose and mouth and ears, his beautiful coat sprayed and flecked with bloody slaver. Then the man advanced and deliberately dealt him a frightful blow on the nose. All the pain he had endured was as nothing compared with the exquisite agony of this. With a roar that was almost lionlike in its ferocity, he again hurled himself at the man. But the man, shifting the club from right to left, coolly caught him by the under jaw, at the same time wrenching downward and backward. Buck described a complete circle in the air, and half of another, then crashed to the ground on his head and chest.",
+      "For the last time he rushed. The man struck the shrewd blow he had purposely withheld for so long, and Buck crumpled up and went down, knocked utterly senseless.",
+      "“He’s no slouch at dog-breakin’, that’s wot I say,” one of the men on the wall cried enthusiastically.",
+      "“Druther break cayuses any day, and twice on Sundays,” was the reply of the driver, as he climbed on the wagon and started the horses.",
+      "Buck’s senses came back to him, but not his strength. He lay where he had fallen, and from there he watched the man in the red sweater.",
+      "“‘Answers to the name of Buck,’” the man soliloquized, quoting from the saloon-keeper’s letter which had announced the consignment of the crate and contents. “Well, Buck, my boy,” he went on in a genial voice, “we’ve had our little ruction, and the best thing we can do is to let it go at that. You’ve learned your place, and I know mine. Be a good dog and all ’ll go well and the goose hang high. Be a bad dog, and I’ll whale the stuffin’ outa you. Understand?”",
+      "As he spoke he fearlessly patted the head he had so mercilessly pounded, and though Buck’s hair involuntarily bristled at touch of the hand, he endured it without protest. When the man brought him water he drank eagerly, and later bolted a generous meal of raw meat, chunk by chunk, from the man’s hand.",
+      "He was beaten (he knew that); but he was not broken. He saw, once for all, that he stood no chance against a man with a club. He had learned the lesson, and in all his after life he never forgot it. That club was a revelation. It was his introduction to the reign of primitive law, and he met the introduction halfway. The facts of life took on a fiercer aspect; and while he faced that aspect uncowed, he faced it with all the latent cunning of his nature aroused. As the days went by, other dogs came, in crates and at the ends of ropes, some docilely, and some raging and roaring as he had come; and, one and all, he watched them pass under the dominion of the man in the red sweater. Again and again, as he looked at each brutal performance, the lesson was driven home to Buck: a man with a club was a lawgiver, a master to be obeyed, though not necessarily conciliated. Of this last Buck was never guilty, though he did see beaten dogs that fawned upon the man, and wagged their tails, and licked his hand. Also he saw one dog, that would neither conciliate nor obey, finally killed in the struggle for mastery.",
+      "Now and again men came, strangers, who talked excitedly, wheedlingly, and in all kinds of fashions to the man in the red sweater. And at such times that money passed between them the strangers took one or more of the dogs away with them. Buck wondered where they went, for they never came back; but the fear of the future was strong upon him, and he was glad each time when he was not selected.",
+      "Yet his time came, in the end, in the form of a little weazened man who spat broken English and many strange and uncouth exclamations which Buck could not understand.",
+      "“Sacredam!” he cried, when his eyes lit upon Buck. “Dat one dam bully dog! Eh? How moch?”",
+      "“Three hundred, and a present at that,” was the prompt reply of the man in the red sweater. “And seem’ it’s government money, you ain’t got no kick coming, eh, Perrault?”",
+      "Perrault grinned. Considering that the price of dogs had been boomed skyward by the unwonted demand, it was not an unfair sum for so fine an animal. The Canadian Government would be no loser, nor would its despatches travel the slower. Perrault knew dogs, and when he looked at Buck he knew that he was one in a thousand—“One in ten t’ousand,” he commented mentally.",
+      "Buck saw money pass between them, and was not surprised when Curly, a good-natured Newfoundland, and he were led away by the little weazened man. That was the last he saw of the man in the red sweater, and as Curly and he looked at receding Seattle from the deck of the Narwhal, it was the last he saw of the warm Southland. Curly and he were taken below by Perrault and turned over to a black-faced giant called François. Perrault was a French-Canadian, and swarthy; but François was a French-Canadian half-breed, and twice as swarthy. They were a new kind of men to Buck (of which he was destined to see many more), and while he developed no affection for them, he none the less grew honestly to respect them. He speedily learned that Perrault and François were fair men, calm and impartial in administering justice, and too wise in the way of dogs to be fooled by dogs.",
+      "In the ’tween-decks of the Narwhal, Buck and Curly joined two other dogs. One of them was a big, snow-white fellow from Spitzbergen who had been brought away by a whaling captain, and who had later accompanied a Geological Survey into the Barrens. He was friendly, in a treacherous sort of way, smiling into one’s face the while he meditated some underhand trick, as, for instance, when he stole from Buck’s food at the first meal. As Buck sprang to punish him, the lash of François’s whip sang through the air, reaching the culprit first; and nothing remained to Buck but to recover the bone. That was fair of François, he decided, and the half-breed began his rise in Buck’s estimation.",
+      "The other dog made no advances, nor received any; also, he did not attempt to steal from the newcomers. He was a gloomy, morose fellow, and he showed Curly plainly that all he desired was to be left alone, and further, that there would be trouble if he were not left alone. “Dave” he was called, and he ate and slept, or yawned between times, and took interest in nothing, not even when the Narwhal crossed Queen Charlotte Sound and rolled and pitched and bucked like a thing possessed. When Buck and Curly grew excited, half wild with fear, he raised his head as though annoyed, favored them with an incurious glance, yawned, and went to sleep again.",
+      "Day and night the ship throbbed to the tireless pulse of the propeller, and though one day was very like another, it was apparent to Buck that the weather was steadily growing colder. At last, one morning, the propeller was quiet, and the Narwhal was pervaded with an atmosphere of excitement. He felt it, as did the other dogs, and knew that a change was at hand. François leashed them and brought them on deck. At the first step upon the cold surface, Buck’s feet sank into a white mushy something very like mud. He sprang back with a snort. More of this white stuff was falling through the air. He shook himself, but more of it fell upon him. He sniffed it curiously, then licked some up on his tongue. It bit like fire, and the next instant was gone. This puzzled him. He tried it again, with the same result. The onlookers laughed uproariously, and he felt ashamed, he knew not why, for it was his first snow.",
+    ] },
+    alice: { chapter: 'Chapter I. Down the Rabbit-Hole', name: 'Down the Rabbit-Hole', total: 12, next: 'Chapter II. The Pool of Tears', paras: [
+      'Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”',
+      'So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid), whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with pink eyes ran close by her.',
+      'There was nothing so very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit say to itself, “Oh dear! Oh dear! I shall be late!” (when she thought it over afterwards, it occurred to her that she ought to have wondered at this, but at the time it all seemed quite natural); but when the Rabbit actually took a watch out of its waistcoat-pocket, and looked at it, and then hurried on, Alice started to her feet.',
+    ] },
+    dracula: { chapter: 'Chapter I. Jonathan Harker’s Journal', name: 'Jonathan Harker’s Journal', total: 27, next: 'Chapter II. Jonathan Harker’s Journal—continued', paras: [
+      '3 May. Bistritz.—Left Munich at 8:35 P. M., on 1st May, arriving at Vienna early next morning; should have arrived at 6:46, but train was an hour late. Buda-Pesth seems a wonderful place, from the glimpse which I got of it from the train and the little I could walk through the streets. I feared to go very far from the station, as we had arrived late and would start as near the correct time as possible.',
+      'The impression I had was that we were leaving the West and entering the East; the most western of splendid bridges over the Danube, which is here of noble width and depth, took us among the traditions of Turkish rule.',
+      'We left in pretty good time, and came after nightfall to Klausenburgh. Here I stopped for the night at the Hotel Royale. I had for dinner, or rather supper, a chicken done up some way with red pepper, which was very good but thirsty.',
+    ] },
+  };
+  const MAX_BYTES = 20 * 1024 * 1024; // the server's limit (D32)
+  const LANGS = [['en', 'EN', 'English'], ['uk', 'УК', 'Українська'], ['ru', 'РУ', 'Русский']];
+
+  // Language: from the browser, uk / ru / en, otherwise English (#89).
+  function browserLang() {
+    const list = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || 'en'];
+    for (const l of list) {
+      const c = String(l).toLowerCase().slice(0, 2);
+      if (c === 'uk' || c === 'ru' || c === 'en') return c;
+    }
+    return 'en';
+  }
+
+  // In the mock, "tip already shown" lives in memory only, so every
+  // new opening of the page shows the tip once. The reader itself keeps it
+  // in the reader's state (D9, #18).
+  let tipSeenMem = false;
+  const tipSeen = () => tipSeenMem;
+  const setTipSeen = v => { tipSeenMem = v; };
+
+  const ui = {
+    count: 3, mode: 'first', screen: 'choose',
+    current: null,    // the open book: { id, title, author } or null
+    up: null,         // { state, name, size, forced }
+    lost: false,      // the open book was not found on the server
+    confirm: null,    // { kind: 'book', id } | { kind: 'file', name, size }
+    lang: browserLang(), sel: null, forced: 'none',
+  };
+
+  // ---------- Helpers ----------
+  const $ = s => document.querySelector(s);
+  const root = document.documentElement;
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const mb = b => (b / 1048576).toFixed(1).replace('.', ',') + ' МБ';
+  const svg = (box, body, w = 1.8, cls = '') => `<svg${cls ? ` class="${cls}"` : ''} viewBox="0 0 ${box} ${box}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+  const ICON = {
+    burger: svg(22, '<path d="M3 6h16M3 11h16M3 16h16"/>'),
+    account: svg(22, '<circle cx="11" cy="8" r="3.5"/><path d="M4 18.5c1.2-3.2 4-4.8 7-4.8s5.8 1.6 7 4.8"/>', 1.6),
+    back: svg(22, '<path d="M14 5l-6 6 6 6"/>'),
+    close: svg(14, '<path d="M2 2l10 10M12 2L2 12"/>'),
+    tick: svg(14, '<path d="M2.5 7.3l2.8 2.8 6-6.4"/>', 2, 'tick'),
+    check: svg(12, '<path d="M2.5 6.2l2.3 2.3 4.7-5"/>', 2),
+    chevR: `<svg viewBox="0 0 8 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 1.5l4.5 4.5L2 10.5"/></svg>`,
+    chevD: `<svg class="chev" viewBox="0 0 10 6" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>`,
+    up: svg(20, '<path d="M10 13V3M6 7l4-4 4 4M3.5 13v3.5h13V13"/>'),
+    alert: svg(20, '<circle cx="10" cy="10" r="8"/><path d="M10 5.8v5"/><path d="M10 14.2h.01" stroke-width="2.4"/>'),
+    info: svg(20, '<circle cx="10" cy="10" r="8"/><path d="M10 9v5"/><path d="M10 6h.01" stroke-width="2.4"/>'),
+    mark: svg(12, '<path d="M3.5 1.8h5v8.4L6 8.3l-2.5 1.9z"/>', 1.4),
+    tap: svg(26,'<circle cx="11" cy="10" r="2.6"/><path d="M5.6 10a5.4 5.4 0 0 1 10.8 0"/><path d="M11 12.6v7.2l3-1.2 3.6 3.9M11 19.8l-2.2-2.4"/>', 1.6),
+  };
+  const WORD = /([A-Za-zÀ-ɏ]+(?:[’'-][A-Za-zÀ-ɏ]+)*)/g;
+  const wrap = text => text.split(WORD).map((part, i) => i % 2 ? `<span class="w">${part}</span>` : esc(part)).join('');
+
+  const frame = $('#frame'), toast = $('#toast'), fileIn = $('#file-in');
+  const S = { choose: $('#s-choose'), all: $('#s-all'), reader: $('#s-reader') };
+  let toastTimer = 0;
+  function note(text) {
+    toast.textContent = text;
+    toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.hidden = true; }, 2600);
+  }
+  const visibleBooks = () => BOOKS.slice(0, ui.count);
+  const isCurrent = b => !!ui.current && ui.current.id === b.id;
+  const bookIndex = b => BOOKS.indexOf(b);
+
+  // ---------- Header (same row as reading-screen.html) ----------
+  // D40: ☰ is on every screen with the same three items: Home, All books,
+  // Settings. Contents is not in the menu; its place on the reading screen
+  // is still to be designed (#40). The logo also leads home.
+  function headerHTML(p) {
+    const langItems = LANGS.map(([code, , name]) =>
+      `<button type="button" class="menu-item" role="menuitemradio" tabindex="-1" aria-checked="${code === ui.lang}" data-lang="${code}" lang="${code}">${name}${ICON.tick}</button>`).join('');
+    const short = LANGS.find(l => l[0] === ui.lang)[1];
+    const langName = LANGS.find(l => l[0] === ui.lang)[2];
+    const onHome = p === 'c';
+    return `<nav class="panel" aria-label="Керування читалкою"><div class="header">
+      <div class="mwrap">
+        <button type="button" class="icon-btn" data-pop="${p}-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="${p}-menu" aria-label="Меню">${ICON.burger}</button>
+        <div class="menu start" id="${p}-menu" role="menu" aria-label="Меню" hidden>
+          <button type="button" class="menu-item" role="menuitem" tabindex="-1" data-act="home"${onHome ? ' aria-current="page"' : ''}>Головна${ICON.tick}</button>
+          <button type="button" class="menu-item" role="menuitem" tabindex="-1" data-act="all-books">Усі книги</button>
+          <button type="button" class="menu-item" role="menuitem" tabindex="-1" data-act="settings">Налаштування</button>
+        </div></div>
+      <button type="button" class="logo-btn" data-act="home" aria-label="Головна"><span class="logo-ph" aria-hidden="true">логотип</span></button>
+      <span class="spacer"></span>
+      <div class="mwrap">
+        <button type="button" class="lang-btn" data-pop="${p}-lang" aria-haspopup="menu" aria-expanded="false" aria-controls="${p}-lang" aria-label="Мова: ${langName}">
+          <span aria-hidden="true">${short}</span>${ICON.chevD}</button>
+        <div class="menu end" id="${p}-lang" role="menu" aria-label="Мова" hidden>${langItems}</div>
+      </div>
+      <div class="mwrap">
+        <button type="button" class="icon-btn" data-pop="${p}-acc" aria-expanded="false" aria-controls="${p}-acc" aria-label="Акаунт">${ICON.account}</button>
+        <p class="menu end tip" id="${p}-acc" role="status" hidden>Вхід з’явиться пізніше</p>
+      </div>
+    </div></nav>`;
+  }
+  // ---------- Covers and book buttons ----------
+  function coverHTML(b, size, inner = '') {
+    const cv = `cv-${bookIndex(b) % 3}`;
+    if (size === 'sm') return `<span class="cover sm ${cv}" aria-hidden="true"><span class="ci">${b.initial}</span></span>`;
+    return `<span class="cover ${cv}" aria-hidden="true"><span class="ct" lang="en">${esc(b.title)}</span><span class="ca" lang="en">${esc(b.author)}</span>${inner}</span>`;
+  }
+  // D40: the outlined plate and the read control (the green book).
+  const LAB = () => `<span class="cur-lab" aria-hidden="true">${ICON.mark}Ви читаєте</span>`;
+  const rbHTML = b => `<span class="rb" aria-hidden="true">${isCurrent(b) ? 'Читати далі' : 'Читати'}</span>`;
+  const bookLabel = b => isCurrent(b) ? `Читати далі: ${b.title}, ${b.author}. Ви читаєте цю книгу` : `${b.title}, ${b.author}`;
+
+  function shelfHTML(list) {
+    return `<ul class="shelf">${list.map(b => `<li><button type="button" class="book-btn${isCurrent(b) ? ' is-cur' : ''}" data-act="open-book" data-book="${b.id}" aria-label="${esc(bookLabel(b))}">
+        <span class="cv-wrap">${coverHTML(b, 'md', rbHTML(b))}${isCurrent(b) ? '<span class="cur-frame" aria-hidden="true"></span>' + LAB() : ''}</span><span class="s-title" lang="en">${esc(b.title)}</span><span class="s-author" lang="en">${esc(b.author)}</span>
+      </button></li>`).join('')}</ul>`;
+  }
+  function rowsHTML(list) {
+    return `<ul class="rows">${list.map(b => `<li${isCurrent(b) ? ' class="cur-li"' : ''}><button type="button" class="book-btn row${isCurrent(b) ? ' is-cur' : ''}" data-act="open-book" data-book="${b.id}" aria-label="${esc(bookLabel(b))}">
+        ${isCurrent(b) ? LAB() : ''}${coverHTML(b, 'sm')}<span class="r-main"><span class="r-title" lang="en">${esc(b.title)}</span><span class="r-author" lang="en">${esc(b.author)}</span>
+        ${isCurrent(b) ? '<span class="r-go" aria-hidden="true">Читати далі →</span>' : `<span class="r-about">${esc(b.about)}</span>`}</span>
+      </button></li>`).join('')}</ul>`;
+  }
+  const moreHTML = () => ui.count > 3
+    ? `<button type="button" class="more-link" data-act="all-books">Усі книги · ${ui.count}${ICON.chevR}</button>` : '';
+
+  function booksHTML() {
+    const top3 = visibleBooks().slice(0, 3);
+    const head = `<div class="sec-head"><div class="sec-title"><h2>Демо-книги</h2>${moreHTML()}</div><p>Класика без авторських прав. Один дотик — і ви читаєте.</p></div>`;
+    return `<section class="sec" aria-label="Демо-книги">${head}${shelfHTML(top3)}</section>`;
+  }
+
+  // ---------- Upload ----------
+  const ERR = {
+    'not-epub': { title: 'Цей файл — не EPUB', text: u => `«${esc(u.name)}». Поки читалка відкриває лише книги у форматі EPUB.` },
+    'too-large': { title: 'Файл завеликий', text: u => `«${esc(u.name)}» важить ${mb(u.size)}, а читалка приймає до 20 МБ. Спробуйте іншу версію цієї книги, наприклад без ілюстрацій.` },
+    'corrupt': { title: 'Не вдалося відкрити файл', text: u => `«${esc(u.name)}», схоже, пошкоджений або завантажився не до кінця. Спробуйте взяти книгу ще раз із того самого джерела.` },
+    'no-text': { title: 'У книзі не знайдено тексту', text: u => `Схоже, сторінки «${esc(u.name)}» — зображення, наприклад скани. Читалка працює лише з текстом.` },
+  };
+  function statusHTML() {
+    const u = ui.up;
+    if (!u) return '';
+    if (u.state === 'parsing') {
+      return `<div class="status busy" role="status">
+        <div><p class="st-title">Відкриваю книгу…</p><p class="st-file">${esc(u.name)} · ${mb(u.size)}</p></div>
+        <button type="button" class="link-btn" data-act="cancel-up">Скасувати</button>
+        <div class="bar-track" aria-hidden="true"><div class="bar-run"></div></div></div>`;
+    }
+    const E = ERR[u.state];
+    const keep = ui.current ?`<p class="st-file">«${esc(ui.current.title)}» лишається відкритою.</p>` : '';
+    return `<div class="status err" role="alert">${ICON.alert}<div><p class="st-title">${E.title}</p><p>${E.text(u)}</p>${keep}</div></div>`;
+  }
+  function uploadHTML() {
+    const busy = ui.up && ui.up.state === 'parsing';
+    const err = ui.up && !busy;
+    const btn = busy ? '' : `<button type="button" class="btn-up" data-act="pick-file">${ICON.up}${err ? 'Обрати інший файл' : 'Завантажити свою книгу'}</button>
+      <p class="up-note">EPUB · до 20 МБ</p>`;
+    // D40: the button lives at the bottom of Home, in the
+    // thumb zone; the status of an upload sits above it.
+    return `<div class="upload" id="upload">${statusHTML() + btn}</div>`;
+  }
+
+  function lostHTML() {
+    if (!ui.lost) return '';
+    return `<div class="notice" role="status">${ICON.info}<div>
+      <p class="st-title">Книга «Moby-Dick» більше недоступна</p>
+      <p>Сервер оновився, і завантажені книги з нього зникли. Завантажте той самий файл ще раз — або почніть одну з демо-книг.</p></div></div>`;
+  }
+
+  // ---------- Choice screen ----------
+  function renderChoose() {
+    // D40: this is Home. It opens on the first visit, from the logo and
+    // from ☰ → Home. With a book open, that book carries the frame and the
+    // plate; upload stays at the bottom.
+    $('#ch-top').innerHTML = headerHTML('c');
+    S.choose.setAttribute('aria-labelledby', 'ch-h');
+    const intro = `<div class="intro"><h1 tabindex="-1" data-focus id="ch-h">Що почитаємо?</h1><p>Англомовні книги з підказкою там, де ви застрягли.</p></div>`;
+    $('#ch-body').innerHTML = [lostHTML(), intro, booksHTML()].join('');
+    $('#ch-foot').innerHTML = `<div class="foot-up">${uploadHTML()}</div>`;
+  }
+  function renderAll() {
+    $('#s-all [data-act="back-all"]').innerHTML = ICON.back;
+    $('#all-body').innerHTML = `<p class="up-note" style="text-align:left">Класика без авторських прав. Перші три — ті, що на головному екрані: їх обрали ми, статистики читань немає.</p>` + rowsHTML(visibleBooks());
+  }
+
+  // ---------- Reading screen ----------
+  function renderReader() {
+    const b = ui.current;
+    const txt = TEXTS[b.id] || TEXTS.cotw;
+    $('#rd-top').innerHTML = headerHTML('r');
+    const showTip = !tipSeen();
+    const tipInner = `${ICON.tap}<span>Торкніться будь-якого слова — побачите переклад усього речення.</span>`;
+    $('#book').innerHTML = `<h1 tabindex="-1" data-focus>${wrap(txt.chapter)}</h1>` + txt.paras.map(p => `<p>${wrap(p)}</p>`).join('');
+    const tb = $('#tip-bottom');
+    tb.innerHTML = tipInner;
+    tb.classList.remove('gone');
+    tb.hidden = !showTip;
+    S.reader.classList.toggle('tip-on', !tb.hidden);
+    $('#ch-end').innerHTML = `<p>Кінець розділу 1 з ${txt.total}</p><button type="button" class="btn-secondary" data-act="next-ch">Далі: <span lang="en">${esc(txt.next)}</span></button>`;
+    $('#w-title').textContent = b.author ? `${b.title} · ${b.author}` : b.title;
+    $('#w-ch').innerHTML = `Розділ 1 з ${txt.total} · <span lang="en">${esc(txt.name)}</span>`;
+    ui.rendered = b;
+    closeHint();
+    closeWhere();
+    $('#rd-scroll').scrollTop = 0;
+    requestAnimationFrame(updateRing);
+  }
+  function dismissTip() {
+    if (tipSeen()) return;
+    setTipSeen(true);
+    document.querySelectorAll('.first-tip').forEach(t => t.classList.add('gone'));
+    setTimeout(() => { $('#tip-bottom').hidden = true; S.reader.classList.remove('tip-on'); }, 320);
+  }
+  function selectWord(w) {
+    dismissTip();
+    closeWhere();
+    if (ui.sel) ui.sel.classList.remove('sel');
+    ui.sel = w;
+    w.classList.add('sel');
+    $('#hint-word').textContent = w.textContent;
+    $('#hint').classList.add('open');
+    S.reader.classList.add('hint-open');
+  }
+  function closeHint() {
+    $('#hint').classList.remove('open');
+    S.reader.classList.remove('hint-open');
+    if (ui.sel) ui.sel.classList.remove('sel');
+    ui.sel = null;
+  }
+
+  // ---------- Progress ring and "where am I" (as in reading-screen.html) ----------
+  // Chapter % from the scroll position; book % assumes chapters of equal
+  // length, which is enough for a mock.
+  const ringEl = $('#ring'), whereEl = $('#where');
+  const whereOpen = () => !whereEl.hidden;
+  function updateRing() {
+    if (!ui.current) return;
+    const sc = $('#rd-scroll');
+    const max = sc.scrollHeight - sc.clientHeight;
+    const frac = max > 0 ? Math.min(1, sc.scrollTop / max) : 1;
+    const txt = TEXTS[ui.current.id] || TEXTS.cotw;
+    const ch = Math.round(frac * 100), bk = Math.round(frac / txt.total * 100);
+    const C = 2 * Math.PI * 18.5, prog = $('#ring-prog');
+    prog.style.strokeDasharray = C;
+    prog.style.strokeDashoffset = C * (1 - frac);
+    $('#ring-pct').textContent = ch + '%';
+    ringEl.setAttribute('aria-label', `Прочитано ${ch}% розділу. Де я в книзі`);
+    $('#w-bar').style.width = bk + '%';
+    $('#w-book').textContent = `${bk}% книги`;
+  }
+  function toggleWhere() {
+    if (whereOpen()) { closeWhere(); return; }
+    updateRing();
+    whereEl.hidden = false;
+    ringEl.setAttribute('aria-expanded', 'true');
+  }
+  function closeWhere(focusRing = false) {
+    if (!whereOpen()) return;
+    whereEl.hidden = true;
+    ringEl.setAttribute('aria-expanded', 'false');
+    if (focusRing) ringEl.focus();
+  }
+  whereEl.querySelector('[data-act="close-where"]').innerHTML = ICON.close;
+  // A finger scroll closes the card (D37).
+  $('#rd-scroll').addEventListener('scroll', () => { updateRing(); closeWhere(); }, { passive: true });
+  $('#hint [data-act="close-hint"]').innerHTML = ICON.close;
+  $('#rd-scroll').addEventListener('click', e => {
+    if (openPop) { closePop(); return; }
+    if (whereOpen()) { closeWhere(); return; }
+    const w = e.target.closest('.w');
+    if (w && $('#book').contains(w)) selectWord(w); else closeHint();
+  });
+
+  // ---------- Screens ----------
+  function show(name, focus = true) {
+    closePop();
+    ui.screen = name;
+    Object.entries(S).forEach(([k, el]) => { el.hidden = k !== name; });
+    if (name === 'choose') renderChoose();
+    if (name === 'all') renderAll();
+    // Coming back to the same book keeps the place; a new book starts at
+    // the top of its first chapter.
+    if (name === 'reader') { if (ui.rendered !== ui.current) renderReader(); else { closeHint(); closeWhere(); } }
+    if (focus) requestAnimationFrame(() => { const h = S[name].querySelector('[data-focus]'); if (h) h.focus({ preventScroll: true }); });
+  }
+  function openBook(id) {
+    const b = BOOKS.find(x => x.id === id);
+    if (ui.current) {
+      if (ui.current.id === id) { show('reader'); return; }
+      askConfirm({ kind: 'book', id, title: b.title });
+      return;
+    }
+    doOpen({ id: b.id, title: b.title, author: b.author });
+  }
+  function doOpen(book) {
+    ui.current = book;
+    ui.mode = 'switch';
+    ui.up = null;
+    ui.lost = false;
+    ui.forced = 'none';
+    syncReview();
+    show('reader');
+    if (!TEXTS[book.id]) note(book.id === 'upload' ? `Макет: замість «${book.title}» — The Call of the Wild` : 'Макет: текст цієї книги не вкладено — показано The Call of the Wild');
+  }
+
+  // ---------- Confirmation: one book at a time (D11) ----------
+  // The open book is replaced only after the new one has opened: a failed
+  // upload leaves the reader in the current book.
+  const confirmEl = $('#confirm'), scrim = $('#scrim');
+  function askConfirm(c) {
+    ui.confirm = c;
+    // D40: small and quiet — two short lines, two buttons.
+    const cur = `«${esc(ui.current.title)}»`;
+    const ask = c.kind === 'book'
+      ? `Перейти на «${esc(c.title)}»?`
+      : `Відкрити свій файл «${esc(c.name)}» замість неї?`;
+    const note = c.kind === 'file' ? `<p class="cf-note">Якщо файл не відкриється, ${cur} лишиться відкритою.</p>` : '';
+    confirmEl.className = 'sheet small';
+    confirmEl.innerHTML = `<p id="cf-h">Зараз ви читаєте ${cur}.</p>
+      <p id="cf-t"><strong>${ask}</strong></p>${note}
+      <div class="btns"><button type="button" class="btn-secondary" data-act="confirm-no">Скасувати</button>
+      <button type="button" class="btn-primary" data-act="confirm-yes">${c.kind === 'book' ? 'Перейти' : 'Відкрити'}</button></div>`;
+    confirmEl.hidden = false;
+    scrim.hidden = false;
+    Object.values(S).forEach(el => { el.inert = true; });
+    requestAnimationFrame(() => confirmEl.querySelector('[data-act="confirm-no"]').focus());
+  }
+  function closeConfirm(yes) {
+    const c = ui.confirm;
+    if (!c) return;
+    ui.confirm = null;
+    confirmEl.hidden = true;
+    scrim.hidden = true;
+    Object.values(S).forEach(el => { el.inert = false; });
+    if (!yes) { const b = S[ui.screen].querySelector(c.kind === 'book' ? `[data-book="${c.id}"]` : '[data-act="pick-file"]'); if (b) b.focus(); return; }
+    if (c.kind === 'book') { const b = BOOKS.find(x => x.id === c.id); doOpen({ id: b.id, title: b.title, author: b.author }); }
+    else startParse(c.name, c.size);
+  }
+  scrim.addEventListener('click', () => closeConfirm(false));
+
+  // ---------- File: checks in the browser first, then the "server" ----------
+  // Not EPUB and too large are caught before anything is sent.
+  let parseToken = 0;
+  fileIn.addEventListener('change', () => {
+    const f = fileIn.files && fileIn.files[0];
+    fileIn.value = '';
+    if (!f) return;
+    if (!/\.epub$/i.test(f.name)) return setUp({ state: 'not-epub', name: f.name, size: f.size });
+    if (f.size > MAX_BYTES) return setUp({ state: 'too-large', name: f.name, size: f.size });
+    if (ui.current) return askConfirm({ kind: 'file', name: f.name, size: f.size });
+    startParse(f.name, f.size);
+  });
+  function setUp(u) {
+    ui.up = u;
+    ui.lost = false;
+    renderChoose();
+    requestAnimationFrame(() => {
+      const st = S.choose.querySelector('.status');
+      if (st) st.scrollIntoView({ block: 'nearest' });
+      const btn = S.choose.querySelector('[data-act="pick-file"], [data-act="cancel-up"]');
+      if (btn) btn.focus({ preventScroll: true });
+    });
+  }
+  function startParse(name, size) {
+    const token = ++parseToken;
+    setUp({ state: 'parsing', name, size });
+    // Demo only: any EPUB "opens" after a short wait.
+    setTimeout(() => {
+      if (token !== parseToken || !ui.up || ui.up.state !== 'parsing') return;
+      doOpen({ id: 'upload', title: name.replace(/\.epub$/i, ''), author: '' });
+    }, 1800);
+  }
+
+  // ---------- Pop-ups: one open at a time ----------
+  let openPop = null;
+  let tipTimer = 0;
+  const menuItems = box => [...box.querySelectorAll('[role^="menuitem"]')];
+  function togglePop(btn, focusLast = false) {
+    const was = openPop && openPop.btn === btn;
+    closePop();
+    if (was) return;
+    const box = document.getElementById(btn.getAttribute('aria-controls'));
+    box.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    openPop = { btn, box };
+    if (box.getAttribute('role') === 'menu') {
+      const items = menuItems(box);
+      const t = focusLast ? items[items.length - 1] : (items.find(i => i.getAttribute('aria-checked') === 'true') || items[0]);
+      t.focus({ preventScroll: true });
+    }
+    if (box.classList.contains('tip')) {
+      clearTimeout(tipTimer);
+      tipTimer = setTimeout(() => { if (openPop && openPop.box === box) closePop(); }, 3000);
+    }
+  }
+  function closePop(returnFocus = false) {
+    if (!openPop) return;
+    const { btn, box } = openPop;
+    const inside = box.contains(document.activeElement);
+    box.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    openPop = null;
+    if ((returnFocus || inside) && btn.isConnected) btn.focus({ preventScroll: true });
+  }
+  document.addEventListener('keydown', e => {
+    const box = e.target.closest && e.target.closest('.menu[role="menu"]');
+    if (box) {
+      const items = menuItems(box), i = items.indexOf(document.activeElement), n = items.length;
+      let next = -1;
+      if (e.key === 'ArrowDown') next = (i + 1) % n;
+      else if (e.key === 'ArrowUp') next = (i - 1 + n) % n;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = n - 1;
+      else if (e.key === 'Tab') { closePop(); return; }
+      if (next >= 0) { e.preventDefault(); items[next].focus(); return; }
+    }
+    const pb = e.target.closest && e.target.closest('[data-pop][aria-haspopup="menu"]');
+    if (pb && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && !(openPop && openPop.btn === pb)) {
+      e.preventDefault();
+      togglePop(pb, e.key === 'ArrowUp');
+      return;
+    }
+    if (e.key !== 'Escape' || $('#app').hidden) return;
+    if (!$('#rev-pop').hidden) { toggleRev(false); $('#bar-more').focus(); return; }
+    if (openPop) { closePop(true); return; }
+    if (ui.confirm) { closeConfirm(false); return; }
+    if (ui.screen === 'reader' && whereOpen()) { closeWhere(true); return; }
+    if (ui.screen === 'reader' && ui.sel) { closeHint(); return; }
+    if (ui.screen === 'all') { backFromAll(); return; }
+    if (ui.screen === 'choose' && ui.current) show('reader');
+  });
+
+  // "←" on All books returns to where the reader came from: Home or the book.
+  function backFromAll() {
+    const to = ui.allFrom || 'choose';
+    show(to, false);
+    requestAnimationFrame(() => {
+      const t = (to === 'choose' && S.choose.querySelector('.more-link')) || S[to].querySelector('[data-pop$="-menu"]');
+      if (t) t.focus({ preventScroll: true });
+    });
+  }
+
+  // ---------- One click handler for the mock ----------
+  frame.addEventListener('click', e => {
+    const pop = e.target.closest('[data-pop]');
+    if (pop) { togglePop(pop); return; }
+    const lang = e.target.closest('[data-lang]');
+    if (lang) {
+      ui.lang = lang.dataset.lang;
+      closePop(true);
+      // Re-render the visible header with the new code and tick.
+      if (ui.screen === 'choose') renderChoose();
+      if (ui.screen === 'reader') $('#rd-top').innerHTML = headerHTML('r');
+      note('Макет: тексти поки лише українською — переклад у #89');
+      return;
+    }
+    if (openPop && !openPop.box.contains(e.target)) closePop();
+    const a = e.target.closest('[data-act]');
+    if (!a || a.getAttribute('aria-disabled') === 'true') return;
+    const act = a.dataset.act;
+    if (act === 'open-book') openBook(a.dataset.book);
+    else if (act === 'all-books') { ui.allFrom = ui.screen; show('all'); }
+    else if (act === 'back-all') backFromAll();
+    else if (act === 'back-reader') show('reader');
+    else if (act === 'ring') toggleWhere();
+    else if (act === 'close-where') closeWhere(true);
+    else if (act === 'next-ch') note('Макет: наступний розділ — у reading-screen.html');
+    else if (act === 'home') { closePop(); ui.up = null; ui.lost = false; ui.forced = 'none'; syncReview(); show('choose'); }
+    else if (act === 'pick-file') fileIn.click();
+    else if (act === 'cancel-up') { parseToken++; ui.up = null; ui.forced = 'none'; syncReview(); setUp(null); }
+    else if (act === 'confirm-yes') closeConfirm(true);
+    else if (act === 'confirm-no') closeConfirm(false);
+    else if (act === 'close-hint') closeHint();
+    else if (act === 'settings') { closePop(); note('Макет: Налаштування — у reading-screen.html'); }
+  });
+
+  // ---------- Review controls ----------
+  function setMode(m) {
+    ui.mode = m;
+    ui.up = null;
+    ui.lost = false;
+    ui.forced = 'none';
+    ui.current = m === 'switch' ? { id: 'cotw', title: 'The Call of the Wild', author: 'Jack London' } : null;
+    syncReview();
+    if (!$('#app').hidden) show('choose');
+  }
+  const SAMPLE = {
+    parsing: ['moby-dick.epub', 1.4], 'not-epub': ['moby-dick.pdf', 2.1], 'too-large': ['atlas-illustrated.epub', 34.2],
+    corrupt: ['moby-dick.epub', 1.4], 'no-text': ['scanned-book.epub', 18.6],
+  };
+  function force(s) {
+    parseToken++;
+    ui.forced = s;
+    ui.up = null;
+    ui.lost = false;
+    if (s === 'lost') { ui.mode = 'first'; ui.current = null; ui.lost = true; }
+    else if (s !== 'none') ui.up = { state: s, name: SAMPLE[s][0], size: SAMPLE[s][1] * 1048576, forced: true };
+    syncReview();
+    show('choose', false);
+    requestAnimationFrame(() => { const st = S.choose.querySelector('.status, .notice'); if (st) st.scrollIntoView({ block: 'nearest' }); });
+  }
+  function tipReset() {
+    setTipSeen(false);
+    if (!$('#app').hidden && ui.screen === 'reader') renderReader();
+    note('Плашка з’явиться знову при відкритті книги');
+  }
+  function setTheme(t) { root.dataset.theme = t; syncReview(); }
+  // Review shortcut: a book is open (The Call of the Wild), the reader is on
+  // Home and taps another book, or picks a file, so the question is open.
+  function demoConfirm(kind) {
+    toggleRev(false);
+    if (ui.confirm) closeConfirm(false);
+    if ($('#app').hidden) { $('#desc').hidden = true; $('#app').hidden = false; }
+    setMode('switch');
+    show('choose', false);
+    if (kind === 'file') askConfirm({ kind: 'file', name: 'moby-dick.epub', size: 1.4 * 1048576 });
+    else openBook('alice');
+  }
+
+  function syncReview() {
+    const press = (sel, attr, val) => document.querySelectorAll(sel).forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute(attr) === String(val))));
+    press('[data-set-count]', 'data-set-count', ui.count);
+    press('[data-set-mode]', 'data-set-mode', ui.mode);
+    press('[data-set-theme]', 'data-set-theme', root.dataset.theme);
+    press('[data-force]', 'data-force', ui.forced);
+    $('#bar-count').textContent = 'Книг: ' + ui.count;
+    $('#bar-theme').textContent = root.dataset.theme === 'dark' ? 'Темна' : 'Світла';
+  }
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-set-count],[data-set-mode],[data-set-theme],[data-force],[data-demo-confirm],[data-act="tip-reset"]');
+    if (!t) return;
+    const d = t.dataset;
+    if (d.demoConfirm) demoConfirm(d.demoConfirm);
+    else if (d.setCount) { ui.count = +d.setCount; syncReview(); if (ui.screen === 'choose') renderChoose(); }
+    else if (d.setMode) setMode(d.setMode);
+    else if (d.setTheme) setTheme(d.setTheme);
+    else if (d.force) { force(d.force); toggleRev(false); }
+    else if (d.act === 'tip-reset') tipReset();
+  });
+  $('#bar-count').addEventListener('click', () => { ui.count = ui.count === 3 ? 8 : 3; syncReview(); if (ui.screen === 'all' && ui.count === 3) show('choose'); else if (ui.screen === 'choose') renderChoose(); });
+  $('#bar-theme').addEventListener('click', () => setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));  function toggleRev(on) {
+    $('#rev-pop').hidden = !on;
+    $('#bar-more').setAttribute('aria-expanded', String(on));
+  }
+  $('#bar-more').addEventListener('click', () => toggleRev($('#rev-pop').hidden));
+  document.addEventListener('click', e => {
+    if ($('#rev-pop').hidden) return;
+    if (!e.target.closest('#rev-pop') && !e.target.closest('#bar-more')) toggleRev(false);
+  });
+
+  // ---------- Open / back ----------
+  $('#open-mock').addEventListener('click', () => {
+    $('#desc').hidden = true;
+    $('#app').hidden = false;
+    show('choose');
+  });
+  $('#back-desc').addEventListener('click', () => {
+    closePop();
+    toggleRev(false);
+    if (ui.confirm) closeConfirm(false);
+    $('#app').hidden = true;
+    $('#desc').hidden = false;
+    $('#open-mock').focus();
+  });
+
+  // ---------- Start ----------
+  // The first start takes the system theme once (D39).
+  root.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  $('#lang-detected').textContent = LANGS.find(l => l[0] === ui.lang)[2];
+  syncReview();
+})();
+</script>
+</body>
+</html>
