@@ -1551,7 +1551,7 @@
     else if (d.force) { force(d.force); toggleRev(false); }
     else if (d.act === 'tip-reset') tipReset();
   });
-  $('#bar-count').addEventListener('click', () => { ui.count = ui.count === 3 ? 8 : 3; syncReview(); if (ui.screen === 'all' && ui.count === 3) show('choose'); else if (ui.screen === 'choose') renderChoose(); });
+  $('#bar-count').addEventListener('click', () => { ui.count = ui.count === 3 ? 8 : 3; syncReview(); if (ui.screen === 'all' && ui.count === 3) show('choose'); else if (ui.screen === 'all') renderAll(); else if (ui.screen === 'choose') renderChoose(); });
   $('#bar-theme').addEventListener('click', () => setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));  function toggleRev(on) {
     $('#rev-pop').hidden = !on;
     $('#bar-more').setAttribute('aria-expanded', String(on));
