@@ -145,8 +145,8 @@ author is in Ukrainian.
 
 The product is for someone reading in English, whatever their first language.
 The language of the hints is a request parameter, not a property of the
-product (D25); its default is the browser's language, the same as the
-interface's (D40).
+product (D25); its default is the same as the interface's: the browser's
+language if it is Ukrainian, Russian or English, otherwise English (D40).
 
 ## Agents and skills
 
