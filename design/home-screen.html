@@ -1321,6 +1321,9 @@
   // The open book is replaced only after the new one has opened: a failed
   // upload leaves the reader in the current book.
   const confirmEl = $('#confirm'), scrim = $('#scrim');
+  // Everything behind the confirmation goes inert, the review bar included:
+  // otherwise Shift+Tab leaves the dialog for the bar.
+  const behindConfirm = [...Object.values(S), $('.review-bar')];
   function askConfirm(c) {
     ui.confirm = c;
     // D40: small and quiet — two short lines, two buttons.
@@ -1336,7 +1339,7 @@
       <button type="button" class="btn-primary" data-act="confirm-yes">${c.kind === 'book' ? 'Перейти' : 'Відкрити'}</button></div>`;
     confirmEl.hidden = false;
     scrim.hidden = false;
-    Object.values(S).forEach(el => { el.inert = true; });
+    behindConfirm.forEach(el => { el.inert = true; });
     requestAnimationFrame(() => confirmEl.querySelector('[data-act="confirm-no"]').focus());
   }
   function closeConfirm(yes) {
@@ -1345,7 +1348,7 @@
     ui.confirm = null;
     confirmEl.hidden = true;
     scrim.hidden = true;
-    Object.values(S).forEach(el => { el.inert = false; });
+    behindConfirm.forEach(el => { el.inert = false; });
     if (!yes) { const b = S[ui.screen].querySelector(c.kind === 'book' ? `[data-book="${c.id}"]` : '[data-act="pick-file"]'); if (b) b.focus(); return; }
     if (c.kind === 'book') { const b = BOOKS.find(x => x.id === c.id); doOpen({ id: b.id, title: b.title, author: b.author }); }
     else startParse(c.name, c.size);
@@ -1465,6 +1468,10 @@
       // Re-render the visible header with the new code and tick.
       if (ui.screen === 'choose') renderChoose();
       if (ui.screen === 'reader') $('#rd-top').innerHTML = headerHTML('r');
+      // The re-render removed the button closePop just focused: focus the
+      // new one, or keyboard users lose their place.
+      const btn = S[ui.screen].querySelector('[data-pop$="-lang"]');
+      if (btn) btn.focus({ preventScroll: true });
       note('Макет: тексти поки лише українською — переклад у #89');
       return;
     }
