@@ -848,18 +848,24 @@
   }
 
   // ---- Header and the Contents strip (D41) ----
-  // The header row never hides. The strip under it hides while the reader
-  // scrolls down and while the hint or a full screen is open; it comes back
-  // on a scroll up and at both ends of the chapter. While hidden it is
-  // inert, so Tab does not land on a button nobody can see.
+  // The header row never hides. Scrolling decides whether the strip under
+  // it is wanted: hidden on a scroll down, back on a scroll up and at both
+  // ends of the chapter. The hint and a full screen hide it only while they
+  // are open; closing them brings back what scrolling wanted. While hidden
+  // it is inert, so Tab does not land on a button nobody can see.
   function measurePanel() {
     frame.style.setProperty('--panel-h', panel.offsetHeight + 'px');
     frame.style.setProperty('--strip-h', strip.offsetHeight + 'px');
   }
-  function setStrip(on) {
-    if (hint.classList.contains('open') || ui.open) on = false;
+  let stripWanted = true;
+  function syncStrip() {
+    const on = stripWanted && !hint.classList.contains('open') && !ui.open;
     frame.classList.toggle('strip-off', !on);
     strip.inert = !on;
+  }
+  function setStrip(on) {
+    stripWanted = on;
+    syncStrip();
   }
   // 6px either way, counted from the last switch, so a slow scroll adds up.
   let lastY = 0;
@@ -981,7 +987,7 @@
     $('#hint-word').textContent = w.textContent;
     hint.classList.add('open');
     frame.classList.add('hint-open');
-    setStrip(false);
+    syncStrip();
     requestAnimationFrame(() => {
       const hintH = hint.offsetHeight;
       frame.style.setProperty('--hint-h', hintH + 'px');
@@ -999,6 +1005,7 @@
     if (state.sel) state.sel.classList.remove('sel');
     state.sel = null;
     if (atChapterEdge(scroller.scrollTop)) setStrip(true);
+    else syncStrip();
   }
 
   let toastTimer = 0;
@@ -1120,7 +1127,7 @@
     scroller.inert = true;
     ring.inert = true;
     chrome.inert = true;
-    setStrip(false);
+    syncStrip();
     syncControls();
     requestAnimationFrame(() => {
       keepCurrentRowInView();
@@ -1138,8 +1145,8 @@
     scroller.inert = false;
     ring.inert = false;
     chrome.inert = false;
-    // The reader came from the header or the strip, so the strip is out.
-    setStrip(true);
+    // The strip comes back as it was before the screen opened.
+    syncStrip();
     from.focus({ preventScroll: true });
   }
 
