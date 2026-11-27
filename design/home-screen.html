@@ -12,9 +12,9 @@
   Open it on a phone. The description page and the inverted, dashed bar at
   the top belong to the design review, not to the reader. The JavaScript
   only demonstrates the behaviour: the frontend (#18) rebuilds it and keeps
-  the behaviour, not the code. Until Contents gets its place in the reading
-  header, the menu here (Home, All books, Settings) differs from the one in
-  reading-screen.html (D40).
+  the behaviour, not the code. The menu here (Home, All books, Settings) is
+  the same as in reading-screen.html (D40); Contents is a strip under the
+  reading header there (D41), not shown on the short reading screen here.
   Book texts (public domain): the whole Chapter I of "The Call of the Wild",
   copied from reading-screen.html; the opening paragraphs of "Alice's
   Adventures in Wonderland" and "Dracula", typed in, not copied from the
@@ -189,9 +189,8 @@
   .scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-tap-highlight-color: transparent; }
   .col { max-width: 36rem; margin-inline: auto; padding: 16px var(--inner) 32px; display: grid; gap: 20px; }
 
-  /* Header: the same row as reading-screen.html. Here it is not hiding:
-     the choice screen is short, and on the reading screen the mock shows
-     only the first screen of a chapter, where the header is visible. */
+  /* Header: the same row as reading-screen.html, always on screen (D41).
+     The Contents strip under it lives only in reading-screen.html. */
   .panel { flex: none; border-bottom: 1px solid var(--color-rule); padding: 4px 0; position: relative; z-index: 10; }
   .header { max-width: 36rem; margin-inline: auto; display: flex; align-items: center; gap: 4px; }
   .header .spacer { flex: 1; }
@@ -777,7 +776,7 @@
       <dt>Головна</dt>
       <dd>«Що почитаємо?», три демо-книги полицею, «Завантажити свою книгу» внизу, у зоні великого пальця. Лінк «Усі книги · N» — лише коли книг більше трьох.</dd>
       <dt>Меню ☰</dt>
-      <dd>На кожному екрані те саме: Головна / Усі книги / Налаштування; сторінка, на якій ви є, — з галочкою. «Зміст» чекає на своє місце в шапці екрана читання.</dd>
+      <dd>На кожному екрані те саме: Головна / Усі книги / Налаштування; сторінка, на якій ви є, — з галочкою. «Зміст» — смужка під шапкою екрана читання (D41), у reading-screen.html.</dd>
       <dt>Відкрита книга</dt>
       <dd>Зелена рамка й обведена плашка «Ви читаєте». З мишею наведення на будь-яку книгу зафарбовує її зеленим із «Читати далі» або «Читати»; на телефоні цього немає — дотик до книги відкриває її. На «Усіх книгах» рядок відкритої книги виділений повністю.</dd>
       <dt>Заміна книги</dt>
@@ -811,10 +810,10 @@
       <li>Де живуть «перший візит», «плашку вже бачив» і місце в книзі — стан читача (D9, #18). Макет нічого не зберігає.</li>
       <li>Чи зберігається місце в книзі, яку замінили, і чи повертає повторне завантаження того самого файлу на те саме місце (id той самий за D32). Тексти макета цього не обіцяють.</li>
       <li>Справжні обкладинки EPUB: макет показує лише типографські; картинка ляже в ту саму рамку.</li>
-      <li>«Зміст» — його місце в шапці екрана читання ще не придумане (#40). Доти меню тут і в reading-screen.html різні.</li>
+      <li>Смужки «Зміст» (D41) на короткому екрані читання тут немає — вона в reading-screen.html.</li>
       <li>Налаштування тут — заглушка: сторінка — у reading-screen.html (D39). На Головній без книги зразок тексту — початок The Call of the Wild (D40).</li>
       <li>Логотип — пунктирна заглушка (#98). Позначка «прочитано» на книгах — після MVP (#100).</li>
-      <li>Шапка читання тут не ховається: повний екран читання — у reading-screen.html.</li>
+      <li>Повний екран читання — у reading-screen.html.</li>
     </ul>
   </section>
 
@@ -1084,8 +1083,8 @@
 
   // ---------- Header (same row as reading-screen.html) ----------
   // D40: ☰ is on every screen with the same three items: Home, All books,
-  // Settings. Contents is not in the menu; its place on the reading screen
-  // is still to be designed (#40). The logo also leads home.
+  // Settings. Contents is not in the menu: on the reading screen it is a
+  // strip under the header (D41, reading-screen.html). The logo also leads home.
   function headerHTML(p) {
     const langItems = LANGS.map(([code, , name]) =>
       `<button type="button" class="menu-item" role="menuitemradio" tabindex="-1" aria-checked="${code === ui.lang}" data-lang="${code}" lang="${code}">${name}${ICON.tick}</button>`).join('');
