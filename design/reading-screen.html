@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Reading Screen</title>
 <!--
-  The reading screen as decided in D37 and D39 (#40), built only from
-  tokens.css: the text, the hiding header with its menus, the progress ring,
-  the hint panel, and the Contents and Settings screens.
+  The reading screen as decided in D37, D39, D40 and D41 (#40), built only
+  from tokens.css: the text, the header with its menus, the Contents strip
+  that hides while reading, the progress ring, the hint panel, and the
+  Contents and Settings screens.
   Open it on a phone. The description page and the inverted, dashed bar at
   the top belong to the design review, not to the reader. The JavaScript
   only demonstrates the behaviour: the frontend (#18) rebuilds it and keeps
@@ -159,7 +160,7 @@
     margin-inline: auto;
     padding: 40px var(--page-gutter) 96px;
   }
-  .panel-top .page-body { padding-top: calc(var(--panel-h, 0px) + 24px); }
+  .panel-top .page-body { padding-top: calc(var(--panel-h, 0px) + var(--strip-h, 0px) + 24px); }
   .hint-open .page-body { padding-bottom: calc(var(--hint-h, 0px) + 48px); }
 
   .book {
@@ -213,19 +214,56 @@
     font-weight: 600;
   }
 
+  /* The header row is always on screen (D41, changes D37). The Contents
+     strip under it slides up behind the row while the reader scrolls down
+     and comes back on any scroll up. It lies over the text instead of
+     pushing it, so the text never jumps. */
+  .chrome { position: absolute; z-index: 10; top: 0; left: 0; right: 0; }
   .panel {
+    position: relative;
+    z-index: 2;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-rule);
+    padding: calc(6px + var(--safe-top)) 8px 6px;
+  }
+  .strip {
     position: absolute;
-    z-index: 10;
-    top: 0;
+    z-index: 1;
+    top: 100%;
     left: 0;
     right: 0;
     background: var(--color-bg);
     border-bottom: 1px solid var(--color-rule);
-    padding: calc(6px + var(--safe-top)) 8px 6px;
-    transform: translateY(-101%);
     transition: transform 0.2s ease;
   }
-  .chrome-on .panel { transform: none; }
+  .strip-off .strip { transform: translateY(-100%); }
+  /* The whole strip is the button: flat, no plate, 44px tall (D41). Its
+     content is centred like the header row, and the icon lines up with
+     the ☰ lines above it. */
+  .toc-btn {
+    display: block;
+    width: 100%;
+    padding: 0 8px;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    text-align: left;
+  }
+  .toc-btn:focus-visible { outline-offset: -3px; }
+  .toc-in {
+    max-width: 36rem;
+    min-height: var(--tap-min);
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 10px 0 13px;
+  }
+  .toc-in svg { flex: none; color: var(--color-muted); }
+  .toc-in .ic { width: 18px; height: 18px; }
+  .toc-in .go { width: 8px; height: 12px; margin-left: auto; }
+  .toc-in .t { flex: none; font-weight: 600; }
+  .toc-at { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-muted); font-size: var(--ui-size-small); }
   /* The header row is centred and capped at the column width; every
      drop-down hangs from its own button inside it, so on a wide screen it
      stays next to the button instead of the window edge. */
@@ -558,12 +596,14 @@
 <!-- ================= Design review: description ================= -->
 <main id="picker" class="review-page">
   <p class="review-tag">Огляд дизайну · #40 · не частина читалки</p>
-  <h1>Екран читання (D37, D39)</h1>
+  <h1>Екран читання (D37, D39–D41)</h1>
   <section class="card" aria-labelledby="what-h">
     <h2 id="what-h">Що це</h2>
     <dl>
       <dt>Шапка</dt>
-      <dd>Зліва ☰ (Зміст, Налаштування) і місце для логотипа, справа мова й значок користувача. Видна на першому екрані розділу й у кінці, виїжджає при прокрутці вгору. Меню ☰ і мова — однакові списки, кожен під своєю кнопкою; мова — English / Українська / Русский.</dd>
+      <dd>Зліва ☰ (Головна, Усі книги, Налаштування — D40) і місце для логотипа, справа мова й значок користувача. Шапка на екрані завжди (D41). Меню ☰ і мова — однакові списки, кожен під своєю кнопкою; мова — English / Українська / Русский.</dd>
+      <dt>Смужка «Зміст»</dt>
+      <dd>Під шапкою: «Зміст · Розділ 1 з 7 · назва розділу», уся смужка — кнопка до сторінки Змісту. Ховається під шапку, коли гортаєте вниз, і повертається, коли вгору, а також на початку й наприкінці розділу (D41).</dd>
       <dt>Кільце</dt>
       <dd>Завжди праворуч унизу (ховається, лише коли відкрита підказка), показує % розділу. Дотик відкриває картку «де я»: книга й автор, розділ, % книги.</dd>
       <dt>Підказка</dt>
@@ -579,10 +619,10 @@
     <h2 id="try-h">Спробуйте</h2>
     <ul>
       <li>Торкніться кільця — над ним відкриється картка. Закривається хрестиком, прокруткою або дотиком поза нею.</li>
-      <li>Прокрутіть вниз — шапка ховається; трохи вгору — повертається. Відкрийте ☰, потім мову: обидва списки стоять під своїми кнопками.</li>
+      <li>Прокрутіть вниз — смужка «Зміст» ховається під шапку, шапка лишається; трохи вгору — смужка повертається. Відкрийте ☰, потім мову: обидва списки стоять під своїми кнопками.</li>
       <li>Торкніться слова внизу екрана — воно підніметься над заглушкою підказки. Торкніться пробілу чи поля — підказка закриється.</li>
       <li>☰ → Налаштування: пройдіть розміри 16 … 24 (смуга огляду показує ≈ знаків у рядку, комфорт 35–45) і перемкніть тему.</li>
-      <li>☰ → Зміст: торкніться рядка «Ви тут» — повернетеся на те саме місце, а не на початок розділу.</li>
+      <li>Смужка «Зміст»: торкніться рядка «Ви тут» — повернетеся на те саме місце, а не на початок розділу. Головна й «Усі книги» з ☰ — у макеті Головної (home-screen.html).</li>
     </ul>
   </section>
 
@@ -597,7 +637,7 @@
     <button type="button" data-theme-choice="dark">Темна</button>
   </div>
   <button type="button" class="review-btn" id="open-mock">Відкрити макет</button>
-  <p class="muted">Інвертована смуга вгорі макета — панель огляду; у читалці її не буде. Екрани Змісту й Налаштувань поки лише українською: перемикач мови перекладає шапку, меню й підказки.</p>
+  <p class="muted">Інвертована смуга вгорі макета — панель огляду; у читалці її не буде. Екрани Змісту й Налаштувань поки лише українською: перемикач мови перекладає шапку, смужку Змісту, меню й підказки.</p>
 </main>
 
 <!-- ================= The reader mock ================= -->
@@ -640,14 +680,16 @@
       <p class="small"><span id="p-book"></span></p>
     </section>
 
-    <nav class="panel" id="panel" data-i18n-aria="readerNav">
+    <nav class="chrome" id="chrome" data-i18n-aria="readerNav">
+      <div class="panel" id="panel">
       <div class="header">
         <div class="mwrap">
           <button type="button" class="icon-btn" id="burger" aria-haspopup="menu" aria-expanded="false" aria-controls="nav-menu" data-i18n-aria="menu">
             <svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 6h16M3 11h16M3 16h16" fill="none" stroke-width="1.8" stroke-linecap="round"/></svg>
           </button>
           <div class="menu start" id="nav-menu" role="menu" data-i18n-aria="menu" hidden>
-            <button type="button" class="menu-item" role="menuitem" tabindex="-1" data-action="contents" data-i18n="contents"></button>
+            <button type="button" class="menu-item" role="menuitem" tabindex="-1" data-action="home" data-i18n="home"></button>
+            <button type="button" class="menu-item" role="menuitem" tabindex="-1" data-action="all-books" data-i18n="allBooks"></button>
             <button type="button" class="menu-item" role="menuitem" tabindex="-1" data-action="settings" data-i18n="settings"></button>
           </div>
         </div>
@@ -666,6 +708,17 @@
           </button>
           <p class="menu end tip" id="account-tip" role="status" data-i18n="accountTip" hidden></p>
         </div>
+      </div>
+      </div>
+      <div class="strip" id="strip">
+        <button type="button" class="toc-btn" id="toc-btn" aria-haspopup="dialog">
+          <span class="toc-in">
+            <svg class="ic" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 5h9M8 10h9M8 15h9"/><path d="M3.5 5h.01M3.5 10h.01M3.5 15h.01" stroke-width="2.6"/></svg>
+            <span class="t" data-i18n="contents"></span>
+            <span class="toc-at"><span id="toc-ch"></span> · <span lang="en">Into the Primitive</span></span>
+            <svg class="go" viewBox="0 0 8 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 1.5l4.5 4.5L2 10.5"/></svg>
+          </span>
+        </button>
       </div>
     </nav>
 
@@ -694,11 +747,11 @@
   const CH_NO = 1, CH_TOTAL = 7;
 
   const T = {
-    uk: { contents: 'Зміст', settings: 'Налаштування', language: 'Мова', menu: 'Меню', account: 'Акаунт', accountTip: 'Вхід з’явиться пізніше', whereLabel: 'Де я в книзі', close: 'Закрити', hintPh: 'Тут буде підказка (#26)', next: 'Далі', readerNav: 'Керування читалкою', hintRegion: 'Підказка',
+    uk: { contents: 'Зміст', home: 'Головна', allBooks: 'Усі книги', settings: 'Налаштування', language: 'Мова', menu: 'Меню', account: 'Акаунт', accountTip: 'Вхід з’явиться пізніше', whereLabel: 'Де я в книзі', close: 'Закрити', hintPh: 'Тут буде підказка (#26)', next: 'Далі', readerNav: 'Керування читалкою', hintRegion: 'Підказка',
       chapterOf: (n, t) => `Розділ ${n} з ${t}`, ofBook: p => `${p}% книги`, ringLabel: p => `Прочитано ${p}% розділу. Де я в книзі`, endOf: () => `Кінець розділу ${CH_NO} з ${CH_TOTAL}` },
-    en: { contents: 'Contents', settings: 'Settings', language: 'Language', menu: 'Menu', account: 'Account', accountTip: 'Sign-in will come later', whereLabel: 'Where I am in the book', close: 'Close', hintPh: 'The hint will appear here (#26)', next: 'Next', readerNav: 'Reader controls', hintRegion: 'Hint',
+    en: { contents: 'Contents', home: 'Home', allBooks: 'All books', settings: 'Settings', language: 'Language', menu: 'Menu', account: 'Account', accountTip: 'Sign-in will come later', whereLabel: 'Where I am in the book', close: 'Close', hintPh: 'The hint will appear here (#26)', next: 'Next', readerNav: 'Reader controls', hintRegion: 'Hint',
       chapterOf: (n, t) => `Chapter ${n} of ${t}`, ofBook: p => `${p}% of book`, ringLabel: p => `${p}% of chapter read. Where I am in the book`, endOf: () => `End of chapter ${CH_NO} of ${CH_TOTAL}` },
-    ru: { contents: 'Содержание', settings: 'Настройки', language: 'Язык', menu: 'Меню', account: 'Аккаунт', accountTip: 'Вход появится позже', whereLabel: 'Где я в книге', close: 'Закрыть', hintPh: 'Здесь будет подсказка (#26)', next: 'Далее', readerNav: 'Управление читалкой', hintRegion: 'Подсказка',
+    ru: { contents: 'Содержание', home: 'Главная', allBooks: 'Все книги', settings: 'Настройки', language: 'Язык', menu: 'Меню', account: 'Аккаунт', accountTip: 'Вход появится позже', whereLabel: 'Где я в книге', close: 'Закрыть', hintPh: 'Здесь будет подсказка (#26)', next: 'Далее', readerNav: 'Управление читалкой', hintRegion: 'Подсказка',
       chapterOf: (n, t) => `Глава ${n} из ${t}`, ofBook: p => `${p}% книги`, ringLabel: p => `Прочитано ${p}% главы. Где я в книге`, endOf: () => `Конец главы ${CH_NO} из ${CH_TOTAL}` },
   };
   const LANGS = [['en', 'EN', 'English'], ['uk', 'УК', 'Українська'], ['ru', 'РУ', 'Русский']];
@@ -727,6 +780,7 @@
   const root = document.documentElement;
   const app = $('#app'), frame = $('#frame'), scroller = $('#scroller'), pageBody = $('#page-body');
   const book = $('#book'), panel = $('#panel'), ring = $('#ring'), hint = $('#hint'), toast = $('#toast');
+  const chrome = $('#chrome'), strip = $('#strip'), tocBtn = $('#toc-btn');
   const burger = $('#burger'), langBtn = $('#lang-btn'), accountBtn = $('#account'), fscreen = $('#fscreen');
   const langMenu = $('#lang-menu');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -761,6 +815,7 @@
     document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t[el.dataset.i18n]; });
     document.querySelectorAll('[data-i18n-fn]').forEach(el => { el.textContent = t[el.dataset.i18nFn](); });
     document.querySelectorAll('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', t[el.dataset.i18nAria]); });
+    $('#toc-ch').textContent = t.chapterOf(CH_NO, CH_TOTAL);
     updatePosition();
     measurePanel();
   }
@@ -792,25 +847,27 @@
     return { ch: p.ch, chPct: Math.round(p.frac * 100), bookPct: Math.round(done / BOOK_WORDS * 100) };
   }
 
-  // ---- Header ----
+  // ---- Header and the Contents strip (D41) ----
+  // The header row never hides. The strip under it hides while the reader
+  // scrolls down and while the hint or a full screen is open; it comes back
+  // on a scroll up and at both ends of the chapter. While hidden it is
+  // inert, so Tab does not land on a button nobody can see.
   function measurePanel() {
     frame.style.setProperty('--panel-h', panel.offsetHeight + 'px');
+    frame.style.setProperty('--strip-h', strip.offsetHeight + 'px');
   }
-  const HEADER_POPS = ['menu', 'lang', 'account'];
-  function setPanel(on) {
+  function setStrip(on) {
     if (hint.classList.contains('open') || ui.open) on = false;
-    if (!on && HEADER_POPS.includes(state.pop)) closePop();
-    frame.classList.toggle('chrome-on', on);
-    panel.inert = !on;
+    frame.classList.toggle('strip-off', !on);
+    strip.inert = !on;
   }
+  // 6px either way, counted from the last switch, so a slow scroll adds up.
   let lastY = 0;
   const atChapterEdge = y => y < 40 || y + scroller.clientHeight >= scroller.scrollHeight - 24;
   scroller.addEventListener('scroll', () => {
     const y = scroller.scrollTop;
-    if (atChapterEdge(y)) setPanel(true);
-    else if (y < lastY - 6) setPanel(true);
-    else if (y > lastY + 6) setPanel(false);
-    lastY = y;
+    if (atChapterEdge(y) || y < lastY - 6) { setStrip(true); lastY = y; }
+    else if (y > lastY + 6) { setStrip(false); lastY = y; }
     updatePosition();
   }, { passive: true });
   scroller.addEventListener('touchmove', () => closePop(), { passive: true });
@@ -898,6 +955,7 @@
   onTap(langBtn, () => togglePop('lang'));
   onTap(accountBtn, () => togglePop('account'));
   onTap(ring, () => { updatePosition(); togglePop('where'); });
+  onTap(tocBtn, () => openTarget('toc', tocBtn));
   document.addEventListener('click', e => {
     if (!state.pop) return;
     const [btn, box] = pops[state.pop];
@@ -923,7 +981,7 @@
     $('#hint-word').textContent = w.textContent;
     hint.classList.add('open');
     frame.classList.add('hint-open');
-    setPanel(false);
+    setStrip(false);
     requestAnimationFrame(() => {
       const hintH = hint.offsetHeight;
       frame.style.setProperty('--hint-h', hintH + 'px');
@@ -940,7 +998,7 @@
     frame.classList.remove('hint-open');
     if (state.sel) state.sel.classList.remove('sel');
     state.sel = null;
-    if (atChapterEdge(scroller.scrollTop)) setPanel(true);
+    if (atChapterEdge(scroller.scrollTop)) setStrip(true);
   }
 
   let toastTimer = 0;
@@ -955,8 +1013,11 @@
     if (!a) return;
     if (a.dataset.action === 'close-hint') closeHint();
     if (a.dataset.action === 'close-where') closePop(true);
-    if (a.dataset.action === 'contents') openTarget('toc');
-    if (a.dataset.action === 'settings') openTarget('settings');
+    if (a.dataset.action === 'home' || a.dataset.action === 'all-books') {
+      closePop(true);
+      note('Макет: Головна й «Усі книги» — у home-screen.html (D40)');
+    }
+    if (a.dataset.action === 'settings') openTarget('settings', burger);
   });
   $('#next-chapter').addEventListener('click', () => note('Макет: у ньому лише Chapter I'));
 
@@ -1013,7 +1074,9 @@
   // and the next two, so a one-line reply of dialogue still fills the
   // seven preview lines.
   function previewParagraphs() {
-    const top = scroller.getBoundingClientRect().top;
+    // The header never hides (D41), so the reading view starts below it,
+    // or below the strip while the strip is out.
+    const top = (frame.classList.contains('strip-off') ? panel : strip).getBoundingClientRect().bottom;
     const prose = [...book.querySelectorAll('p:not(.epigraph)')];
     let i = prose.findIndex(el => el.getBoundingClientRect().bottom > top + 1);
     if (i < 0) i = 0;
@@ -1045,17 +1108,19 @@
     const b = body.getBoundingClientRect(), r = row.getBoundingClientRect();
     if (r.bottom > b.bottom) body.scrollTop += r.top - b.top - 16;
   }
-  function openTarget(kind) {
+  // from: the button that opened the screen; focus goes back to it.
+  function openTarget(kind, from) {
     closePop();
     closeHint();
-    ui.open = { kind };
+    ui.open = { kind, from };
     previewCache = null;
     renderScreen();
     fscreen.hidden = false;
     frame.classList.add('fs-open');
     scroller.inert = true;
     ring.inert = true;
-    setPanel(false);
+    chrome.inert = true;
+    setStrip(false);
     syncControls();
     requestAnimationFrame(() => {
       keepCurrentRowInView();
@@ -1065,15 +1130,17 @@
   }
   function closeAll() {
     if (!ui.open) return;
+    const from = ui.open.from || burger;
     ui.open = null;
     fscreen.hidden = true;
     fscreen.innerHTML = '';
     frame.classList.remove('fs-open');
     scroller.inert = false;
     ring.inert = false;
-    // The reader came from the header, so it comes back with them.
-    setPanel(true);
-    burger.focus({ preventScroll: true });
+    chrome.inert = false;
+    // The reader came from the header or the strip, so the strip is out.
+    setStrip(true);
+    from.focus({ preventScroll: true });
   }
 
   // ---- Changes apply at once; nothing to save ----
@@ -1188,7 +1255,7 @@
     app.hidden = false;
     closeHint();
     scroller.scrollTop = 0; lastY = 0;
-    requestAnimationFrame(() => { measurePanel(); setPanel(true); updatePosition(); updateCpl(); });
+    requestAnimationFrame(() => { measurePanel(); setStrip(true); updatePosition(); updateCpl(); });
   });
   $('#back').addEventListener('click', () => {
     closeAll();
